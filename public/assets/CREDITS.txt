@@ -1,0 +1,11 @@
+Image-based lighting and skies (CC0, Poly Haven - https://polyhaven.com)
+  hdri/overcast.hdr   Potsdamer Platz            (downsized, re-aligned)
+  hdri/day.hdr        Modern Buildings 2
+  hdri/sunset.hdr     Venice Sunset
+  hdri/night.hdr      St. Peter's Square Night
+  sky/overcast.jpg    Kloppenheim 05             (upper half, tone-mapped)
+  sky/day.jpg         Aristea Wreck Puresky
+  sky/sunset.jpg      Wasteland Clouds Puresky
+Road texture (CC0, Poly Haven "Asphalt 02", via the BabylonJS Assets repository)
+  textures/asphalt_color.jpg, asphalt_roughness.jpg; asphalt_normal.jpg generated from the colour map.
+CC0 assets need no attribution; they are credited here anyway.

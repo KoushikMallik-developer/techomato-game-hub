@@ -1,0 +1,12 @@
+concept.glb
+-----------
+"Car Concept" by Eric Chadwick, Darmstadt Graphics Group GmbH (2024), from the Khronos Group
+glTF Sample Assets: https://github.com/KhronosGroup/glTF-Sample-Assets/tree/main/Models/CarConcept
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0):
+https://creativecommons.org/licenses/by/4.0/
+Based on a public-domain (CC0) model by Unity Fan.
+
+Changes made for Midnight Pursuit: Khronos and 3D Commerce logos removed (licence plate, tyre
+sidewall and tread textures replaced), hidden interior parts, wipers and brake pads removed,
+glass simplified, material variants removed, textures re-compressed, paint renamed so the
+game can recolour it. The logos are trademarks of the Khronos Group and are not included.
