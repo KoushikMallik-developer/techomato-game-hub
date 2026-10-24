@@ -13,9 +13,17 @@ npm run build    # outputs static files to dist/
 npm run preview  # test the production build
 ```
 
-`dist/` is a static site: host it on Netlify, Vercel, Cloudflare Pages, GitHub Pages, etc.
-Because it uses client-side routing, configure the host to serve `index.html` for unknown paths
-(Netlify: a `_redirects` file with `/* /index.html 200`).
+`dist/` is a static site that works on any static host.
+
+## Deploy to Vercel
+
+`vercel.json` is already set up (Vite build, `dist` output, fallback to `index.html` so `/play/<id>` works on refresh, and cache headers).
+
+1. Push this repo to GitHub.
+2. On vercel.com choose **Add New, Project**, import the repo and click **Deploy**. No settings need changing.
+
+Every push to `master` then redeploys automatically. For other hosts, serve `index.html` for unknown paths
+(Netlify: a `public/_redirects` file with `/* /index.html 200`).
 
 ## Structure
 
