@@ -539,6 +539,37 @@ function makePalms(list, mats) {
   return g;
 }
 
+// weathering painted in world space: rain streaks running down from the tops of walls, grime and
+// damp toward the ground, broad tonal patches, so long walls never look like one flat colour
+function weather(m, k = 1) {
+  m.onBeforeCompile = (sh) => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp; varying vec3 vWn;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz; vWn = normalize(mat3(modelMatrix) * objectNormal);');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vWp; varying vec3 vWn;
+        float wh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+        float wn(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        {
+          float vert = 1.0 - abs(vWn.y);
+          float u = dot(vWp.xz, vec2(0.7071)) + vWp.x * 0.3;
+          // streaks: thin vertical bands, stretched long downward
+          float st = wn(vec2(u * 2.2, vWp.y * 0.12)) * 0.65 + wn(vec2(u * 6.5, vWp.y * 0.3)) * 0.35;
+          float streak = smoothstep(0.55, 0.85, st) * vert;
+          // damp and dirt kicked up near the ground
+          float grime = (1.0 - smoothstep(0.05, 1.3, vWp.y - floor((vWp.y + 0.2) / 4.0) * 4.0)) * vert * (0.6 + 0.4 * wn(vWp.xz * 1.7));
+          float patchN = wn(vec2(u * 0.18, vWp.y * 0.25)) * 0.7 + wn(vec2(u * 0.6, vWp.y * 0.6)) * 0.3;
+          vec3 c = diffuseColor.rgb;
+          c *= mix(0.9, 1.06, patchN);
+          c = mix(c, c * vec3(0.72, 0.68, 0.62), streak * 0.45 * ${k.toFixed(2)});
+          c = mix(c, c * vec3(0.62, 0.58, 0.52), grime * 0.55 * ${k.toFixed(2)});
+          diffuseColor.rgb = c;
+        }`);
+  };
+  m.customProgramCacheKey = () => `cb-weather-${k}`;
+  return m;
+}
+
 function makeMaterials() {
   const pl = TX.plaster(1);
   const st = TX.stone(2);
@@ -554,12 +585,12 @@ function makeMaterials() {
   const std = (t, o = {}) => new THREE.MeshStandardMaterial({ map: t.map, normalMap: t.normalMap, roughness: 0.92, metalness: 0, ...o });
   pl.map.repeat.set(1, 1);
   return {
-    wall: std(pl, { vertexColors: true }),
-    block: std(st2, { vertexColors: true }),
+    wall: weather(std(pl, { vertexColors: true, normalScale: new THREE.Vector2(1.4, 1.4) })),
+    block: weather(std(st2, { vertexColors: true }), 0.7),
     cap: std(st, { color: 0xeeeeee }),
     ledge: std(st, { vertexColors: true }),
     trim: std(st, { vertexColors: true, side: THREE.DoubleSide }),
-    roof: std(st2, { vertexColors: true, color: 0xb0a898 }),
+    roof: weather(std(st2, { vertexColors: true, color: 0xb0a898 }), 0.6),
     floor: {
       plaza: std(sl), tile: std(tl), sand: std(sd), def: std(tlCool), atk: std(tlWarm), stair: std(st),
     },

@@ -166,7 +166,7 @@ function GameCard({ game, index }) {
 const PERKS = [
   ['Nothing to install', 'Every game runs in the browser tab. Progress saves on your device.', <path key="p" d="M12 3v12m0 0-5-5m5 5 5-5M4 19h16" />],
   ['Phone or keyboard', 'Touch controls appear on phones; on a computer use keyboard, mouse or a gamepad.', <path key="p" d="M6 9h4M8 7v4M15 10h.01M18 8h.01M7 4h10a5 5 0 0 1 5 5v3a5 5 0 0 1-9 3h-2a5 5 0 0 1-9-3V9a5 5 0 0 1 5-5Z" />],
-  ['Play with friends', 'Core Breach and Midnight Pursuit have online rooms: share a code and join.', <path key="p" d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 10a7 7 0 0 1 14 0M17 3.5a4 4 0 0 1 0 7M22 21a7 7 0 0 0-4-6.3" />],
+  ['Play with friends', 'Core Breach, Midnight Pursuit and Ascendants have online rooms: share a code and join.', <path key="p" d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 10a7 7 0 0 1 14 0M17 3.5a4 4 0 0 1 0 7M22 21a7 7 0 0 0-4-6.3" />],
 ];
 
 export default function Home() {

@@ -4,6 +4,33 @@
 
 export const games = [
   {
+    id: 'ascendants',
+    badges: ['3D', 'Online', '50 players', 'Squads'],
+    features: ['50 ki warriors on a wild island: solo, duos or squads', 'Free flight, ki charging, beams that clash in the sky', '18 techniques + 8 ultimates, two-stage transformations', 'Day passes from morning to sunset; blasts leave craters and fell trees', 'Tactical HUD: compass, squad pings, sky-cache airdrops, bombardment zones', 'Hero select with lock-in, levels, unlockable heroes and auras, daily challenges'],
+    title: 'Ascendants',
+    genre: 'Battle Royale',
+    emoji: '⚡',
+    engine: 'three',
+    colors: ['#ffd166', '#1d2f6b'],
+    tagline: 'Anime-style battle royale for 50: fly, charge your ki, clash beams, ascend to new forms, and be the last one standing.',
+    controls: [
+      ['W A S D', 'Move · Shift sprint (in the air: boost, hold for a supersonic dash)'],
+      ['Space', 'Jump · double-tap to fly or land · hold to climb'],
+      ['Ctrl / Z', 'Descend while flying'],
+      ['Mouse', 'Look · left click 5-hit combo · hold and release for a heavy smash'],
+      ['Q E R / X', 'Your three techniques / ultimate'],
+      ['C (hold)', 'Charge ki'],
+      ['V · T · G', 'Vanish behind target · lock on · ascend'],
+      ['F (hold)', 'Open crates · revive teammates'],
+      ['4 / 5 · 6 7 8', 'Medkit / shield cell · emotes'],
+      ['Tab · M', 'Inventory (loot nearby) · map (click to mark)'],
+      ['Middle mouse / B', 'Ping for your squad (on an enemy: enemy ping)'],
+      ['Touch', 'Left stick move, drag to look, on-screen buttons'],
+    ],
+    size: { width: 1280, height: 720 },
+    load: () => import('./ascendants/index.js'),
+  },
+  {
     id: 'horde-surge',
     badges: ['3D', 'Phone ready'],
     features: ['Up to 1,400 units per side', 'Gates, crates, barriers and bosses', 'Champions, skins and upgrades', 'Endless levels across five worlds'],

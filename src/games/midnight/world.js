@@ -2063,6 +2063,28 @@ export class World {
     const C = this.city;
     const gt = groundTextures(3);
     this.groundMat = new THREE.MeshStandardMaterial({ map: gt.map, normalMap: gt.normalMap, roughnessMap: gt.roughnessMap, roughness: 1, metalness: 0, normalScale: new THREE.Vector2(0.8, 0.8), polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -2 });
+    // damp streets: after dark (and in the rain) the asphalt turns glossy and puddles gather in the
+    // dips, mirroring the sky and the city lights
+    this.wetU = { value: 0 };
+    this.groundMat.onBeforeCompile = (sh) => {
+      sh.uniforms.uWet = this.wetU;
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;').replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWp = (modelMatrix * vec4(transformed, 1.0)).xyz;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>
+          uniform float uWet; varying vec3 vWp; float wetMask;
+          float wh(vec2 p){ return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+          float wn(vec2 p){ vec2 i = floor(p); vec2 f = fract(p); f = f*f*(3.0-2.0*f); return mix(mix(wh(i), wh(i+vec2(1,0)), f.x), mix(wh(i+vec2(0,1)), wh(i+vec2(1,1)), f.x), f.y); }`)
+        .replace('#include <map_fragment>', `#include <map_fragment>
+          float pn = wn(vWp.xz * 0.11) * 0.6 + wn(vWp.xz * 0.37) * 0.3 + wn(vWp.xz * 1.3) * 0.1;
+          float puddle = smoothstep(0.58, 0.66, pn);
+          wetMask = uWet * (0.55 + 0.45 * puddle);
+          diffuseColor.rgb *= 1.0 - wetMask * 0.45;`)
+        .replace('#include <roughnessmap_fragment>', `#include <roughnessmap_fragment>
+          roughnessFactor = mix(roughnessFactor, mix(0.42, 0.03, smoothstep(0.58, 0.66, pn)), uWet);`)
+        .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+          normal = normalize(mix(normal, normalize((viewMatrix * vec4(0.0, 1.0, 0.0, 0.0)).xyz), uWet * smoothstep(0.58, 0.66, pn) * 0.9));`);
+    };
+    this.groundMat.customProgramCacheKey = () => 'mp-wet-road';
     const road = new Builder();
     const walk = new Builder();
     const curb = new Builder();
@@ -3363,8 +3385,11 @@ export class World {
       this.mountainMat.color.setScalar((1 - k) * 1.5 * (p.windows > 0.8 ? 0.35 : 1));
       this.mountainMat.emissive.set(p.fog).multiplyScalar(k * 0.6);
     }
-    this.groundMat.roughness = rain ? 0.45 : 1;
-    this.groundMat.metalness = rain ? 0.15 : 0;
+    this.groundMat.roughness = 1;
+    this.groundMat.metalness = rain ? 0.1 : 0;
+    // damp after dark, soaked in the rain
+    this.wetU.value = rain ? 1 : p.windows > 0.8 ? 0.7 : p.windows > 0.3 ? 0.3 : 0;
+    this.groundMat.envMapIntensity = rain ? 1.6 : 1.3;
   }
 
   // ───────────── map image ─────────────

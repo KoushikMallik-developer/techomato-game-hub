@@ -170,7 +170,7 @@ export function bodyGeometry(build = 1, detail = 'high') {
   const key = `${build}|${detail}`;
   if (cache.has(key)) return cache.get(key);
   const { f, parts } = makeField(build);
-  const h = detail === 'low' ? 0.02 : detail === 'medium' ? 0.015 : 0.0115;
+  const h = detail === 'lod' ? 0.03 : detail === 'low' ? 0.02 : detail === 'medium' ? 0.015 : 0.0115;
   const { pos, idx } = surfaceNets(f, [-0.7, 0.1, -0.2], [0.7, 1.72, 0.2], h);
   const n = pos.length / 3;
   const nor = new Float32Array(n * 3);
@@ -301,8 +301,8 @@ function handField(curl) {
   };
 }
 const HANDS = new Map();
-export function handMesh(curl = 1) {
-  const key = curl.toFixed(2);
-  if (!HANDS.has(key)) HANDS.set(key, meshField(handField(curl), [-0.085, -0.15, -0.085], [0.055, 0.03, 0.04], 0.0022));
+export function handMesh(curl = 1, detail = 'high') {
+  const key = curl.toFixed(2) + detail;
+  if (!HANDS.has(key)) HANDS.set(key, meshField(handField(curl), [-0.085, -0.15, -0.085], [0.055, 0.03, 0.04], detail === 'lod' ? 0.0055 : detail === 'medium' ? 0.003 : 0.0022));
   return HANDS.get(key);
 }

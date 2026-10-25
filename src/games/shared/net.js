@@ -159,10 +159,11 @@ export class NetRoom extends Emitter {
   static hostId(game, code) { return `gh-${game}-${code}`.toLowerCase(); }
 
   // Open a new room. Resolves to the room once it is registered with the signalling server.
-  static host(game, meta, codeLen = 5) {
+  static host(game, meta, codeLen = 5, maxPlayers = null) {
     return new Promise((resolve, reject) => {
       const room = new NetRoom(game, meta);
       room.isHost = true;
+      room.maxPlayers = maxPlayers || NET.maxPlayers || 10;
       let tries = 0;
       const attempt = () => {
         room.code = randCode(codeLen);
@@ -227,7 +228,7 @@ export class NetRoom extends Emitter {
       const p = m.payload || {};
       if (m.type === 'OFFER' && this.isHost) {
         if (this.links.has(m.src)) this.links.get(m.src).close();
-        if (this.players.size >= (NET.maxPlayers || 10)) return;
+        if (this.players.size >= (this.maxPlayers || NET.maxPlayers || 10)) return;
         const link = this.addLink(m.src, false);
         link.onOffer(p).catch(() => {});
       } else if (m.type === 'ANSWER') {

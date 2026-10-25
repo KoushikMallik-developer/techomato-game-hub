@@ -37,6 +37,31 @@ src/
   components/GameCanvas.jsx mounts/destroys a game, full screen, tall frame for phone-friendly games
   games/registry.js         list of all games
   games/shared/net.js       peer-to-peer rooms (WebRTC data channels, PeerJS-compatible signalling)
+  games/ascendants/         Ascendants (50-player anime-style ki battle royale, Three.js)
+    data.js                 techniques and ultimates, ki, forms, modes, crates, items, heroes, auras,
+                            daily challenges, storm phases, tuning, saves
+    island.js               the island: heightmap (coast, hills, mountain, crater lake), named places, houses,
+                            landmarks, forests (fellable), boulders, crate spots; ground/collision/ray queries
+    islandview.js           splat terrain with shore foam and cloud shadows, animated sea, forests, boulders,
+                            houses and landmarks, sky with a sun that sets over the match, drifting clouds, a
+                            river and waterfall, morning mist, birds, grass and wildflowers
+    texgen.js               generated textures (grass, rock, sand, snow, bark, leaves, facades, roofs)
+    sim.js                  movement: dropship, skydive, glide, run/sprint, swim, free flight with boost and
+                            supersonic dash, tumbling, rushes and dashes, charging/firing stances
+    powers.js               every technique and ultimate: blasts, homing discs, beams and beam clashes, gathered
+                            spheres, rushes, teleports, fighting copies, gravity fields, comets
+    match.js                rules (offline or on the host): 50 players in solo/duos/squads, ki, forms, melee
+                            combos and heavy smashes, vanish, downed/revive, crates and loot, damage, craters
+                            and felled trees, the storm, snapshots for guests
+    bots.js                 bot AI: drop spot, looting, flight, ki charging, technique choice, combos, vanish,
+                            transforming, mashing in clashes, squad play and reviving
+    hero.js                 heroes built from Core Breach's sculpted body/head/hands, suits, capes, LOD,
+                            fighting poses, form glow
+    fx.js, audio.js         particles, flying rocks, auras, beams, clashes, craters, falling trees, the storm
+                            wall; synthesised sound
+    hud.js, game.js         HUD (ki, forms, lock-on, squad, clash meter), menus; client (camera, input,
+                            rendering, events, day cycle, progression)
+    online.js               50-player rooms over shared/net.js (bots fill empty slots, teams by join order)
   games/hordesurge/         Horde Surge (3D crowd battler, Three.js)
     data.js                 tuning, upgrades, skins, champions, world themes, save file
     levels.js               seeded level generator: gates, crates, barriers, hazards, horde budget, bosses
@@ -90,6 +115,28 @@ A dark violet library: a full-width showcase that cycles through the games with 
 keycap controls and "play next". Horde Surge gets a tall frame on phones held upright.
 
 ## The games
+
+**Ascendants** (50-player anime-style battle royale, original heroes, techniques and names): ride the dropship
+over a wild island, jump, skydive — or take off and fly. Everyone can fly (double-tap Space; Shift boosts and
+breaks into a supersonic dash) and fights with ki: hold C to power up with a flaring aura while rocks lift off
+the ground, then spend it on techniques. 18 techniques (ki volley, charged Radiant Wave beam, piercing ray,
+homing Razor Halo, ki bomb, scatter storm, nova burst, kiai shout, blinding flash, meteor rush, instant step,
+afterimage, ki barrier, inner calm, split form copies, energy lash, gravity press, earth breaker) and 8
+ultimates (Gathered Sun, Final Radiance mega beam, Star Breaker, Crimson Surge, Comet Fall, Time Stop, Galaxy
+Barrage, Spirit Fist). Beams that meet clash in a ball of energy — mash to push it back into your rival. Five-
+hit melee combos, a held heavy smash that sends heroes tumbling through the trees, vanish (V) to appear behind
+your lock-on target (T), and a form meter that fills as you fight: press G to ascend, and again for the second
+stage (glowing hair, faster, stronger). Crates and fallen heroes give you techniques; equip three plus one
+ultimate (Tab); duplicates level them up. Solo, duos or squads (downed teammates can be revived). The day goes
+from morning to a golden sunset over a match; blasts burn craters and knock down trees. Level up to unlock
+heroes and aura colours, with three daily challenges. Solo against bots, or online: one player hosts a room
+(code), up to 50 players join and bots fill the rest.
+Cel-shaded heroes with ink outlines and spiky hair that rises with each form, sandstone spires and mesas, and
+anime impact frames with speed lines. A tactical HUD: hero select with a lock-in timer, a heading compass with
+squad markers, alive / teams / kills counters, a gridded map and minimap with a line to the safe zone, an ability
+bar with ki costs and ultimate pips, damage-direction arcs, an elimination banner, squad pings (middle mouse or
+B; click the map to place a marker), a Tab inventory listing loot nearby, sky-cache airdrops under red
+canopies, bombardment zones raining comets, and a customisable crosshair.
 
 **Horde Surge** (3D crowd battler, original characters and art): hold to fire a stream of little units from
 your cannon up a lane, drag to aim them through gates (×2, ×3, +N bonus, −N traps, moving gates), chew through

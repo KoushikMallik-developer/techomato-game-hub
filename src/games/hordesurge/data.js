@@ -53,7 +53,7 @@ export const CHAMPIONS = [
 
 // ── worlds: every 5 levels the scenery changes ──
 export const THEMES = [
-  { id: 'meadow', name: 'Green Meadow', sky: ['#7ec8ff', '#d9f0ff'], ground: '#7cc46a', ground2: '#5aa64d', lane: '#c9ccd2', rail: '#e9eef2', tree: '#3d9a4a', trunk: '#7a5636', fog: '#cfe8ff', sun: '#fff4dc', enemy: '#2a2633', fort: '#8a6a52' },
+  { id: 'meadow', name: 'Green Meadow', sky: ['#7ec8ff', '#d9f0ff'], ground: '#76b85e', ground2: '#4f9445', lane: '#c9ccd2', rail: '#e9eef2', tree: '#3d9a4a', trunk: '#7a5636', fog: '#cfe8ff', sun: '#fff4dc', enemy: '#2a2633', fort: '#8a6a52' },
   { id: 'snow', name: 'Frost Peaks', sky: ['#9fb6cc', '#e8eef3'], ground: '#dce5ed', ground2: '#c3d1de', lane: '#b9bdc4', rail: '#f4f6f8', tree: '#2f6a52', trunk: '#5e4632', fog: '#dfe7ee', sun: '#ffffff', enemy: '#1d1b24', fort: '#6f7c8c' },
   { id: 'desert', name: 'Sunbaked Dunes', sky: ['#f4b26b', '#ffe7c2'], ground: '#e8c27f', ground2: '#d6a866', lane: '#cdb79a', rail: '#f5e9d6', tree: '#5f8f3a', trunk: '#8a6a3a', fog: '#f6dcb6', sun: '#ffd9a0', enemy: '#3a1f1a', fort: '#b07a4a' },
   { id: 'candy', name: 'Candy Hills', sky: ['#ff9ad5', '#ffe2f4'], ground: '#ffc2e6', ground2: '#f6a7d6', lane: '#e3d4ee', rail: '#ffffff', tree: '#ff5fa8', trunk: '#ffffff', fog: '#ffe0f2', sun: '#fff0fa', enemy: '#3b1e4a', fort: '#c45a9a' },

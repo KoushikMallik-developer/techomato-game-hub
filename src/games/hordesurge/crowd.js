@@ -16,11 +16,24 @@ function bodyGeometry() {
     p.setXYZ(i, x * k, y + 0.34, z * k);
   }
   g.computeVertexNormals();
-  const feet = [-1, 1].map((s) => { const f = new THREE.SphereGeometry(0.11, 8, 6); f.scale(1, 0.6, 1.3); f.translate(s * 0.15, 0.06, -0.04); return f; });
-  // little arms swinging at the sides, slightly forward
-  const arms = [-1, 1].map((s) => { const a = new THREE.CapsuleGeometry(0.055, 0.13, 3, 8); a.rotateZ(s * 0.5); a.rotateX(0.35); a.translate(s * 0.33, 0.3, -0.05); return a; });
-  return mergeSimple([g, ...feet, ...arms]);
+  // a little belly highlight and a darker underside are painted in the shader; feet and arms are tagged
+  // so the vertex shader can swing them as the unit runs
+  const feet = [-1, 1].map((s) => { const f = new THREE.SphereGeometry(0.115, 10, 8); f.scale(1, 0.62, 1.35); f.translate(s * 0.15, 0.06, -0.04); return f; });
+  const arms = [-1, 1].map((s) => { const a = new THREE.CapsuleGeometry(0.058, 0.14, 4, 10); a.rotateZ(s * 0.5); a.rotateX(0.35); a.translate(s * 0.33, 0.3, -0.05); return a; });
+  const out = mergeSimple([g, ...feet, ...arms]);
+  const tags = []; [g, ...feet, ...arms].forEach((q, k) => { const n = (q.index ? q.index.count : q.attributes.position.count); for (let i = 0; i < n; i++) tags.push(k === 0 ? 0 : k <= 2 ? (k === 1 ? -1 : 1) : (k === 3 ? -2 : 2)); });
+  out.setAttribute('limb', new THREE.Float32BufferAttribute(tags, 1));
+  return out;
 }
+// soft round shadow under each unit
+function shadowTexture() {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'); const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  gr.addColorStop(0, 'rgba(0,0,0,0.55)'); gr.addColorStop(0.5, 'rgba(0,0,0,0.32)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+let SHADOW_TEX = null;
 
 // eyes (white with dark pupils) + a little mouth, facing -z
 function faceGeometry() {
@@ -88,17 +101,38 @@ export class Crowd {
     this.scale = opts.scale || 1;
     this.bodyMat = new THREE.MeshStandardMaterial({ color: opts.color || '#3fd86b', roughness: 0.45, metalness: 0.05, emissive: opts.emissive || '#000000', emissiveIntensity: opts.emissive ? 0.6 : 0 });
     // soft rim light so units read clearly against the ground, plus a tiny bit of gloss
+    this.uTime = { value: 0 };
     this.bodyMat.onBeforeCompile = (sh) => {
-      sh.fragmentShader = sh.fragmentShader.replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+      sh.uniforms.uTime = this.uTime;
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nattribute float limb; uniform float uTime; varying float vLimb; varying float vH;')
+        .replace('#include <begin_vertex>', `#include <begin_vertex>
+          vLimb = limb; vH = position.y;
+          float ph = uTime * 11.0 + instanceMatrix[3].x * 1.7 + instanceMatrix[3].z * 2.3;
+          float sw = sin(ph);
+          if (abs(limb) > 0.5 && abs(limb) < 1.5) { float side = sign(limb); transformed.z += sw * side * 0.13; transformed.y += max(0.0, cos(ph) * side) * 0.07; }
+          if (abs(limb) > 1.5) { float side = sign(limb); transformed.z -= sw * side * 0.09; transformed.y += abs(sw) * 0.02; }`);
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nvarying float vLimb; varying float vH;')
+        .replace('#include <color_fragment>', `#include <color_fragment>
+          // darker underside and feet, a lighter belly: reads as a rounded little character
+          diffuseColor.rgb *= mix(0.62, 1.08, smoothstep(0.02, 0.62, vH));
+          if (abs(vLimb) > 0.5 && abs(vLimb) < 1.5) diffuseColor.rgb *= 0.7;`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float rim = pow(1.0 - clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0), 2.5);
-        totalEmissiveRadiance += diffuseColor.rgb * rim * 0.55 + vec3(rim * 0.08);`);
+        totalEmissiveRadiance += diffuseColor.rgb * rim * 0.55 + vec3(rim * 0.1);`);
     };
+    this.bodyMat.customProgramCacheKey = () => 'hs-unit';
     this.bodyMat.roughness = 0.38;
     this.body = new THREE.InstancedMesh(BODY, this.bodyMat, N);
     this.face = new THREE.InstancedMesh(FACE, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3 }), N);
     const accG = accessoryGeometry(opts.acc);
     this.acc = accG ? new THREE.InstancedMesh(accG, new THREE.MeshStandardMaterial({ color: opts.accColor || '#ffffff', roughness: 0.5, metalness: opts.acc === 'crown' ? 0.6 : 0.05 }), N) : null;
-    [this.body, this.face, this.acc].forEach((m) => {
+    if (!SHADOW_TEX) SHADOW_TEX = shadowTexture();
+    const sg = new THREE.PlaneGeometry(0.8, 0.8); sg.rotateX(-Math.PI / 2);
+    this.shadow = new THREE.InstancedMesh(sg, new THREE.MeshBasicMaterial({ map: SHADOW_TEX, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), N);
+    this.shadow.renderOrder = 1;
+    [this.body, this.face, this.acc, this.shadow].forEach((m) => {
       if (!m) return;
       m.count = 0;
       m.frustumCulled = false;
@@ -140,7 +174,9 @@ export class Crowd {
     const n = this.n;
     const s0 = this.scale;
     const rot = this.dir < 0 ? 0 : Math.PI;
+    this.uTime.value = this.time * (this.dir < 0 ? 1 : 0.85);
     const arrs = [this.body.instanceMatrix.array, this.face.instanceMatrix.array, this.acc ? this.acc.instanceMatrix.array : null];
+    const sh = this.shadow.instanceMatrix.array;
     for (let i = 0; i < n; i++) {
       const ph = this.ph[i] + this.time * 11 * this.sp[i];
       const hop = Math.abs(Math.sin(ph));
@@ -157,8 +193,12 @@ export class Crowd {
         a[o + 8] = s * sx; a[o + 9] = 0; a[o + 10] = c * sx; a[o + 11] = 0;
         a[o + 12] = this.x[i]; a[o + 13] = y; a[o + 14] = this.z[i]; a[o + 15] = 1;
       }
+      // the shadow stays on the ground and shrinks as the unit hops
+      const o = i * 16; const ss = s0 * (1 - hop * 0.25) * (this.y[i] > 0.5 ? Math.max(0.3, 1 - this.y[i] * 0.1) : 1);
+      sh[o] = ss; sh[o + 1] = 0; sh[o + 2] = 0; sh[o + 3] = 0; sh[o + 4] = 0; sh[o + 5] = 1; sh[o + 6] = 0; sh[o + 7] = 0;
+      sh[o + 8] = 0; sh[o + 9] = 0; sh[o + 10] = ss; sh[o + 11] = 0; sh[o + 12] = this.x[i]; sh[o + 13] = 0.03; sh[o + 14] = this.z[i]; sh[o + 15] = 1;
     }
-    [this.body, this.face, this.acc].forEach((m) => { if (m) { m.count = n; m.instanceMatrix.needsUpdate = true; } });
+    [this.body, this.face, this.acc, this.shadow].forEach((m) => { if (m) { m.count = n; m.instanceMatrix.needsUpdate = true; } });
   }
 
   setLook(color, acc, accColor) {
@@ -173,6 +213,6 @@ export class Crowd {
   }
 
   dispose() {
-    [this.body, this.face, this.acc].forEach((m) => { if (m) { this.scene.remove(m); m.material.dispose(); m.dispose(); } });
+    [this.body, this.face, this.acc, this.shadow].forEach((m) => { if (m) { this.scene.remove(m); m.material.dispose(); m.dispose(); } });
   }
 }

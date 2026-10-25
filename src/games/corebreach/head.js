@@ -85,15 +85,16 @@ function hairField(variant, style) {
   };
 }
 
+const res = (detail, high) => (detail === 'lod' ? 0.0095 : detail === 'low' ? 0.005 : detail === 'medium' ? 0.0036 : high);
 const cache = new Map();
 export function headMesh(variant = 0, detail = 'high') {
   const key = `h${variant}${detail}`;
-  if (!cache.has(key)) cache.set(key, meshField(headField(variant), [-0.1, -0.15, -0.13], [0.1, 0.13, 0.12], detail === 'low' ? 0.005 : detail === 'medium' ? 0.0036 : 0.0026));
+  if (!cache.has(key)) cache.set(key, meshField(headField(variant), [-0.1, -0.15, -0.13], [0.1, 0.13, 0.12], res(detail, 0.0026)));
   return cache.get(key);
 }
 export function hairMesh(variant = 0, style = 0, detail = 'high') {
   const key = `r${variant}${style}${detail}`;
-  if (!cache.has(key)) cache.set(key, meshField(hairField(variant, style), [-0.1, -0.12, -0.12], [0.1, 0.2, 0.13], detail === 'low' ? 0.005 : detail === 'medium' ? 0.0036 : 0.0026));
+  if (!cache.has(key)) cache.set(key, meshField(hairField(variant, style), [-0.1, -0.12, -0.12], [0.1, 0.2, 0.13], res(detail, 0.0026)));
   return cache.get(key);
 }
 
@@ -133,6 +134,6 @@ function wearField(kind, variant) {
 }
 export function headwear(kind, detail = 'high', variant = 0) {
   const key = `w${kind}${variant}${detail}`;
-  if (!cache.has(key)) cache.set(key, meshField(wearField(kind, variant), [-0.13, -0.2, -0.17], [0.13, 0.17, 0.15], detail === 'low' ? 0.005 : detail === 'medium' ? 0.0036 : 0.0028));
+  if (!cache.has(key)) cache.set(key, meshField(wearField(kind, variant), [-0.13, -0.2, -0.17], [0.13, 0.17, 0.15], res(detail, 0.0028)));
   return cache.get(key);
 }

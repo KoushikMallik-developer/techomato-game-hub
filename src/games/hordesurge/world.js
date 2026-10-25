@@ -232,26 +232,45 @@ export function buildFortress(level) {
 // ───────────── the cannon ─────────────
 export function buildCannon(color) {
   const g = new THREE.Group();
-  const body = std({ color, roughness: 0.35, metalness: 0.3 });
-  const metal = std({ color: '#2f3238', roughness: 0.35, metalness: 0.8 });
-  const wood = std({ color: '#7a5636', roughness: 0.8 });
-  mesh(new THREE.BoxGeometry(2.2, 0.5, 2), wood, g, 0, 0.45, 0);
+  const body = std({ color, roughness: 0.28, metalness: 0.35 });
+  const metal = std({ color: '#2f3238', roughness: 0.32, metalness: 0.85 });
+  const brass = std({ color: '#d9a441', roughness: 0.25, metalness: 0.9 });
+  const wood = std({ color: '#7a5636', roughness: 0.75 });
+  const woodDark = std({ color: '#5a3d26', roughness: 0.8 });
+  // the carriage: two cheek boards, a base, iron straps and bolts
+  mesh(new THREE.BoxGeometry(1.9, 0.38, 2.1), wood, g, 0, 0.42, 0.05);
   [-1, 1].forEach((s) => {
-    const w = mesh(new THREE.CylinderGeometry(0.62, 0.62, 0.28, 18), metal, g, s * 1.15, 0.62, 0.2);
-    w.rotation.z = Math.PI / 2;
-    const hub = mesh(new THREE.CylinderGeometry(0.2, 0.2, 0.32, 10), body, g, s * 1.15, 0.62, 0.2);
-    hub.rotation.z = Math.PI / 2;
+    const cheek = mesh(new THREE.BoxGeometry(0.22, 0.75, 1.9), woodDark, g, s * 0.78, 0.85, 0.15);
+    cheek.rotation.x = 0.12;
+    mesh(new THREE.BoxGeometry(0.24, 0.08, 1.95), metal, g, s * 0.78, 1.2, 0.2).rotation.x = 0.12;
+    for (let k = 0; k < 3; k++) mesh(new THREE.SphereGeometry(0.05, 8, 6), brass, g, s * 0.9, 0.7 + k * 0.08, -0.5 + k * 0.6);
+    // spoked wheel with an iron tyre and a brass hub cap
+    const wg = new THREE.Group(); wg.position.set(s * 1.15, 0.64, 0.2); g.add(wg);
+    const tyre = mesh(new THREE.TorusGeometry(0.58, 0.07, 10, 28), metal, wg, 0, 0, 0); tyre.rotation.y = Math.PI / 2;
+    const fel = mesh(new THREE.TorusGeometry(0.5, 0.06, 8, 28), wood, wg, 0, 0, 0); fel.rotation.y = Math.PI / 2;
+    for (let k = 0; k < 8; k++) { const sp = mesh(new THREE.CylinderGeometry(0.035, 0.045, 0.98, 6), wood, wg, 0, 0, 0); sp.rotation.x = (k / 8) * Math.PI; }
+    const hub = mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.3, 14), brass, wg, 0, 0, 0); hub.rotation.z = Math.PI / 2;
+    g.userData[s < 0 ? 'wl' : 'wr'] = wg;
   });
   const barrel = new THREE.Group();
   barrel.position.set(0, 1.15, 0);
   g.add(barrel);
-  const b = mesh(new THREE.CylinderGeometry(0.62, 0.8, 2.6, 20), body, barrel, 0, 0, -0.6);
-  b.rotation.x = Math.PI / 2 - 0.25;
-  const rim = mesh(new THREE.TorusGeometry(0.62, 0.12, 10, 24), metal, barrel, 0, 0.33, -1.85);
-  rim.rotation.x = -0.25;
-  mesh(new THREE.SphereGeometry(0.85, 18, 14), body, barrel, 0, -0.25, 0.55);
+  // a turned barrel: tapering body with raised reinforcing rings, a flared muzzle and a cascabel knob
+  const prof = [[0.0, 1.0], [0.62, 1.0], [0.82, 0.92], [0.86, 0.78], [0.8, 0.7], [0.79, 0.4], [0.84, 0.35], [0.84, 0.28], [0.77, 0.24], [0.72, -0.3], [0.77, -0.34], [0.77, -0.42], [0.7, -0.46], [0.64, -1.05], [0.71, -1.1], [0.74, -1.22], [0.68, -1.28], [0.5, -1.3], [0.48, -1.18]];
+  const lathe = new THREE.LatheGeometry(prof.slice().reverse().map(([r, y]) => new THREE.Vector2(r, y)), 28);
+  const b = mesh(lathe, body, barrel, 0, 0, -0.6);
+  b.rotation.x = Math.PI / 2 + 0.25;
+  b.scale.set(1, 1.15, 1);
+  // brass bands and a dark bore, in the barrel's own space (its muzzle is the -y end)
+  [[0.3, 0.86], [-0.38, 0.79], [-1.16, 0.76]].forEach(([y, r]) => { const band = mesh(new THREE.TorusGeometry(r, 0.045, 8, 28), brass, b, 0, y, 0); band.rotation.x = Math.PI / 2; band.scale.set(1, 1, 1 / 1.15); });
+  const bore = mesh(new THREE.CircleGeometry(0.49, 24), new THREE.MeshBasicMaterial({ color: '#0b0b0d' }), b, 0, -1.25, 0, false);
+  bore.rotation.x = Math.PI / 2;
+  mesh(new THREE.SphereGeometry(0.62, 22, 16), body, barrel, 0, -0.22, 0.62);
+  mesh(new THREE.SphereGeometry(0.2, 12, 10), brass, barrel, 0, -0.4, 1.38);
+  // trunnions
+  [-1, 1].forEach((s) => { const t = mesh(new THREE.CylinderGeometry(0.17, 0.17, 0.4, 12), metal, barrel, s * 0.82, -0.05, -0.1); t.rotation.z = Math.PI / 2; });
   // energy ring around the muzzle (glows when the champion is ready)
-  const ring = mesh(new THREE.TorusGeometry(0.75, 0.06, 8, 32), new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0 }), barrel, 0, 0.35, -1.95, false);
+  const ring = mesh(new THREE.TorusGeometry(0.78, 0.06, 8, 32), new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0 }), barrel, 0, 0.38, -2.05, false);
   ring.rotation.x = -0.25;
   g.position.set(0, 0, CANNON_Z + 1.5);
   return { group: g, barrel, body, ring };
