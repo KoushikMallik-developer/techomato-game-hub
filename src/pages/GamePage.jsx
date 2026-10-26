@@ -4,15 +4,16 @@ import { games, getGame } from '../games/registry.js';
 import { Link } from '../router.jsx';
 import { SITE_NAME } from '../config.js';
 import { Cover } from './Home.jsx';
+import { Icon } from '../components/Brand.jsx';
 
 // "W A S D / Arrows" -> keycaps for each key group
 function Keys({ text }) {
   const parts = text.split(/\s*\/\s*/);
   return (
-    <span className="keys">
+    <span className="t-keys">
       {parts.map((p, i) => (
-        <span key={i} className="key-group">
-          {i > 0 && <span className="or">or</span>}
+        <span key={i} className="t-row" style={{ gap: 6 }}>
+          {i > 0 && <span className="t-tiny t-muted">or</span>}
           <kbd>{p}</kbd>
         </span>
       ))}
@@ -25,79 +26,65 @@ export default function GamePage({ id }) {
 
   useEffect(() => {
     document.title = game ? `${game.title} – ${SITE_NAME}` : SITE_NAME;
-    return () => { document.title = SITE_NAME; };
+    return () => { document.title = `${SITE_NAME} – Play in your browser`; };
   }, [game]);
 
   if (!game) {
     return (
-      <div className="center-page">
-        <h1>Game not found</h1>
-        <p>There's no game at this address.</p>
-        <Link className="btn" to="/">Open the library</Link>
+      <div className="t-empty-page">
+        <h1 className="t-h2">Game not found</h1>
+        <p className="t-muted">There's no game at this address.</p>
+        <Link className="t-btn t-btn-accent" to="/">Open the library</Link>
       </div>
     );
   }
 
   const others = games.filter((g) => g.id !== game.id);
   return (
-    <div className="play-page" style={{ '--c1': game.colors[0], '--c2': game.colors[1] }}>
-      <div className="play-glow" aria-hidden="true" />
-      <div className="play-head">
-        <Link to="/" className="back">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 L5 8 L10 13" /></svg>
-          Library
-        </Link>
-        <div className="play-title">
-          <div>
-            <p className="eyebrow"><i className="live-dot" /> Now playing</p>
-            <h1>{game.title}</h1>
-          </div>
-          <ul className="badges">
-            <li>{game.genre}</li>
-            {game.badges.map((b) => <li key={b}>{b}</li>)}
-          </ul>
+    <div className="t-wrap t-play" style={{ '--c1': game.colors[0], '--c2': game.colors[1] }}>
+      <Link to="/" className="t-back"><Icon name="back" size={18} />Library</Link>
+      <div className="t-between t-play-head">
+        <div className="t-stack" style={{ gap: 6 }}>
+          <h1 className="t-h1 t-page-h">{game.title}</h1>
+          <p className="t-ink2">{game.tagline}</p>
+        </div>
+        <div className="t-row" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <span className="t-chip t-chip-accent">{game.genre}</span>
+          {game.badges.map((b) => <span key={b} className="t-chip">{b}</span>)}
         </div>
       </div>
 
       <GameCanvas key={game.id} game={game} />
 
-      <div className="play-info">
-        <section className="panel">
-          <h2>Controls</h2>
-          <ul className="control-list">
+      <div className="t-play-info">
+        <section className="t-card">
+          <h2 className="t-h3" style={{ marginBottom: 16 }}>Controls</h2>
+          <ul className="t-controls">
             {game.controls.map(([keys, action]) => (
-              <li key={keys}>
-                <Keys text={keys} />
-                <span className="action">{action}</span>
-              </li>
+              <li key={keys}><Keys text={keys} /><span className="t-ink2 t-small">{action}</span></li>
             ))}
           </ul>
         </section>
-        <section className="panel">
-          <h2>About the game</h2>
-          <p className="about">{game.tagline}</p>
-          <ul className="feature-list">
-            {game.features.map((f) => <li key={f}>{f}</li>)}
+        <section className="t-card">
+          <h2 className="t-h3" style={{ marginBottom: 16 }}>About the game</h2>
+          <ul className="t-checks">
+            {game.features.map((f) => <li key={f}><Icon name="check" size={16} />{f}</li>)}
           </ul>
         </section>
       </div>
 
       {others.length > 0 && (
-        <section className="more">
-          <div className="section-head">
-            <div>
-              <p className="eyebrow">Up next</p>
-              <h2>Play next</h2>
-            </div>
-          </div>
-          <div className="more-row">
+        <section className="t-more">
+          <h2 className="t-h3" style={{ marginBottom: 14 }}>Play next</h2>
+          <div className="t-more-row">
             {others.map((g) => (
-              <Link key={g.id} to={`/play/${g.id}`} className="mini" style={{ '--c1': g.colors[0], '--c2': g.colors[1] }}>
+              <Link key={g.id} to={`/play/${g.id}`} className="t-card t-mini">
                 <Cover game={g} />
-                <span className="mini-text">
-                  <strong>{g.title}</strong>
-                  <span>{g.genre}</span>
+                <span className="t-stack">
+                  <strong className="t-h3" style={{ fontSize: 17 }}>{g.title}</strong>
+                  <span className="t-small t-muted">{g.genre}</span>
                 </span>
+                <Icon name="arrow" size={18} className="t-mini-go" />
               </Link>
             ))}
           </div>

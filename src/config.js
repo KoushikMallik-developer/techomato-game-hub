@@ -1,6 +1,6 @@
 // Change the site name here.
-export const SITE_NAME = 'Techomato Game Hub';
-export const TAGLINE = 'Play instantly. No downloads.';
+export const SITE_NAME = 'Techomato Games';
+export const TAGLINE = 'Free 3D games that run in your browser. No downloads.';
 
 // Online play (peer-to-peer). Players connect directly; the signalling server only introduces them.
 // The default is the free public PeerJS server. To run your own: `npx peerjs --port 9000` and set

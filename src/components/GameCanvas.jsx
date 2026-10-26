@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { assetBase } from '../config.js';
+import { Icon } from './Brand.jsx';
 
 // Mounts a game inside the frame and cleans it up on unmount. Every game module exports
 // mount(container, opts) and returns a cleanup function; the module is loaded lazily.
@@ -65,28 +66,31 @@ export default function GameCanvas({ game }) {
   const ratio = tall ? '9 / 16' : `${width} / ${height}`;
   const maxW = tall ? 'min(100%, 46vh)' : `min(100%, ${(78 * width) / height}vh)`;
   return (
-    <div className="stage" style={{ '--c1': game.colors[0], '--c2': game.colors[1] }}>
-      <div className="frame-wrap hud" style={{ width: maxW }}>
-        <div ref={wrapRef} className={`game-frame${full ? ' full' : ''}`} style={{ aspectRatio: ratio }}>
-          <div ref={mountRef} className="game-mount" />
-          {status === 'loading' && (
-            <div className="game-overlay">
-              <span className="spinner" />
-              <span className="overlay-title">Loading {game.title}</span>
-              <span className="loadbar"><i /></span>
-            </div>
-          )}
-          {status === 'error' && <div className="game-overlay">{game.title} didn't load. Check your connection and reload the page.</div>}
+    <div className="t-stage-play" style={{ '--c1': game.colors[0], '--c2': game.colors[1] }}>
+      <div className="t-window t-game-win" style={{ width: maxW }}>
+        <div className="t-win-bar">
+          <span className="t-dots"><span /><span /><span /></span>
+          <span>{game.id}.play</span>
+          <span className="t-row" style={{ gap: 10 }}>
+            {status === 'ready' && <span className="t-live"><i />live</span>}
+            {canFullscreen && (
+              <button className="t-win-btn" onClick={toggleFullscreen} aria-label={full ? 'Exit full screen' : 'Full screen'}>
+                <Icon name={full ? 'shrink' : 'expand'} size={15} />
+              </button>
+            )}
+          </span>
+        </div>
+        <div ref={wrapRef} className={`t-frame game-frame${full ? ' full' : ''}`} style={{ aspectRatio: ratio }}>
+          <div ref={mountRef} className="t-mount" />
+          {status === 'loading' && <div className="t-overlay"><span className="t-spinner" />Loading {game.title}</div>}
+          {status === 'error' && <div className="t-overlay">{game.title} didn't load. Check your connection and reload the page.</div>}
         </div>
       </div>
-      <div className="stage-bar" style={{ width: maxW }}>
-        <p className="stage-status"><i className={`live-dot${status === 'ready' ? '' : ' idle'}`} />{status === 'ready' ? 'Running' : status === 'error' ? 'Error' : 'Loading'}</p>
-        {narrow && !game.portrait && <p className="stage-hint">Turn your phone sideways or go full screen for the best view.</p>}
+      <div className="t-stage-bar" style={{ width: maxW }}>
+        {narrow && !game.portrait ? <p className="t-small t-muted">Turn your phone sideways or go full screen for the best view.</p> : <p className="t-small t-muted">Click the game to start. Progress saves on this device.</p>}
         {canFullscreen && (
-          <button className="btn btn-ghost" onClick={toggleFullscreen}>
-            <svg viewBox="0 0 16 16" aria-hidden="true">
-              {full ? <path d="M6 1v5H1M10 1v5h5M6 15v-5H1M10 15v-5h5" /> : <path d="M1 6V1h5M15 6V1h-5M1 10v5h5M15 10v5h-5" />}
-            </svg>
+          <button className="t-btn t-btn-ghost t-btn-sm" onClick={toggleFullscreen}>
+            <Icon name={full ? 'shrink' : 'expand'} size={16} />
             {full ? 'Exit full screen' : 'Full screen'}
           </button>
         )}
