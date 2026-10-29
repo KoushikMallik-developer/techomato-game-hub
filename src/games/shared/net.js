@@ -23,6 +23,20 @@ class Emitter {
   emit(ev, ...a) { (this._h[ev] || []).slice().forEach((f) => { try { f(...a); } catch (e) { console.error(e); } }); }
 }
 
+// ICE servers: the static list from config, plus TURN servers fetched from NET.turnApiUrl if set.
+let iceServers = NET.iceServers;
+let icePromise = null;
+function loadIceServers() {
+  if (!NET.turnApiUrl) return Promise.resolve(iceServers);
+  if (!icePromise) {
+    icePromise = fetch(NET.turnApiUrl)
+      .then((r) => r.json())
+      .then((list) => { if (Array.isArray(list) && list.length) iceServers = [...NET.iceServers, ...list]; return iceServers; })
+      .catch((e) => { console.warn('[net] could not load TURN servers', e); icePromise = null; return iceServers; });
+  }
+  return icePromise;
+}
+
 // One signalling connection (PeerJS protocol): register an id, then exchange OFFER/ANSWER/CANDIDATE messages.
 class Signal extends Emitter {
   constructor(url, id) {
@@ -57,8 +71,11 @@ class Link extends Emitter {
     this.id = remoteId;
     this.rtt = 0;
     this.ready = false;
-    this.pc = new RTCPeerConnection({ iceServers: NET.iceServers });
+    this.pc = new RTCPeerConnection({ iceServers });
+    this.cands = { host: 0, srflx: 0, relay: 0 };
+    this.pc.oniceconnectionstatechange = () => console.info(`[net] ice ${this.pc.iceConnectionState} (candidates ${JSON.stringify(this.cands)})`);
     this.pc.onicecandidate = (e) => {
+      if (e.candidate && this.cands[e.candidate.type] !== undefined) this.cands[e.candidate.type]++;
       if (e.candidate) room.signal.send({ type: 'CANDIDATE', dst: remoteId, payload: { candidate: e.candidate.toJSON ? e.candidate.toJSON() : e.candidate, connectionId: room.cid } });
     };
     this.pc.onconnectionstatechange = () => {
@@ -159,7 +176,8 @@ export class NetRoom extends Emitter {
   static hostId(game, code) { return `gh-${game}-${code}`.toLowerCase(); }
 
   // Open a new room. Resolves to the room once it is registered with the signalling server.
-  static host(game, meta, codeLen = 5, maxPlayers = null) {
+  static async host(game, meta, codeLen = 5, maxPlayers = null) {
+    await loadIceServers();
     return new Promise((resolve, reject) => {
       const room = new NetRoom(game, meta);
       room.isHost = true;
@@ -184,7 +202,8 @@ export class NetRoom extends Emitter {
   }
 
   // Join a room by code. Resolves once the link to the host is open.
-  static join(game, code, meta, timeoutMs = 20000) {
+  static async join(game, code, meta, timeoutMs = 20000) {
+    await loadIceServers();
     return new Promise((resolve, reject) => {
       const room = new NetRoom(game, meta);
       room.isHost = false;
@@ -194,7 +213,13 @@ export class NetRoom extends Emitter {
       room.signal = new Signal(NET.signalUrl, room.myId);
       let done = false;
       const fail = (msg) => { if (done) return; done = true; room.close(); reject(new Error(msg)); };
-      const timer = setTimeout(() => fail('Could not connect to that room (it may not exist, or your network blocks direct connections)'), timeoutMs);
+      const timer = setTimeout(() => {
+        const l = room.links.get(room.hostId);
+        const relay = l && l.cands.relay > 0;
+        fail(l && l.cands.host + l.cands.srflx + l.cands.relay > 0
+          ? `Could not connect to that room (your network blocks direct connections${relay ? '' : ' and no relay server is configured'})`
+          : 'Could not connect to that room (it may not exist)');
+      }, timeoutMs);
       room.signal.on('error', (e) => fail(e));
       room.signal.on('open', () => {
         room.emit('status', 'Contacting host...');
