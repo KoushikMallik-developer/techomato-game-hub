@@ -5,6 +5,8 @@ import { Link } from '../router.jsx';
 import { SITE_NAME } from '../config.js';
 import { Cover } from './Home.jsx';
 import { Icon } from '../components/Brand.jsx';
+import { SyncBadge } from '../components/Account.jsx';
+import { useAccount } from '../account/AuthContext.jsx';
 
 // "W A S D / Arrows" -> keycaps for each key group
 function Keys({ text }) {
@@ -23,6 +25,9 @@ function Keys({ text }) {
 
 export default function GamePage({ id }) {
   const game = getGame(id);
+  const acc = useAccount();
+  // with accounts configured, playing needs a signed-in account so progress and scores can be saved
+  const gated = !!(acc && acc.enabled && !(acc.ready && acc.user));
 
   useEffect(() => {
     document.title = game ? `${game.title} – ${SITE_NAME}` : SITE_NAME;
@@ -54,7 +59,22 @@ export default function GamePage({ id }) {
         </div>
       </div>
 
-      <GameCanvas key={game.id} game={game} />
+      {gated ? (
+        <div className="t-gate t-card">
+          <span className="t-gate-ic"><Icon name={acc.ready ? 'lock' : 'cloud'} size={26} /></span>
+          {acc.ready ? (<>
+            <h2 className="t-h3">Sign in to play {game.title}</h2>
+            <p className="t-muted" style={{ maxWidth: 440 }}>Your progress, scores and leaderboard rank are saved to your account, so you can pick up on any device. It's free.</p>
+            <div className="t-row" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button className="t-btn t-btn-accent" onClick={() => acc.openAuth('signin')}>Sign in</button>
+              <button className="t-btn t-btn-ghost" onClick={() => acc.openAuth('signup')}>Create account</button>
+            </div>
+          </>) : <p className="t-muted">Checking your account…</p>}
+        </div>
+      ) : (<>
+        <GameCanvas key={game.id} game={game} />
+        <div style={{ marginTop: 12 }}><SyncBadge /></div>
+      </>)}
 
       <div className="t-play-info">
         <section className="t-card">

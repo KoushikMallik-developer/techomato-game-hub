@@ -227,3 +227,73 @@ main { flex: 1; width: 100%; }
   .t-mini { grid-template-columns: 96px 1fr auto; }
   .t-win-pick button { flex: none; }
 }
+
+/* accounts: avatar, menu, sign-in dialog, forms */
+.t-avatar { display: inline-grid; place-items: center; border-radius: 999px; flex-shrink: 0; line-height: 1; user-select: none; }
+.t-avatar-btn { border: 0; background: none; padding: 0; border-radius: 999px; }
+.t-menu { position: relative; }
+.t-menu-pop { position: absolute; right: 0; top: calc(100% + 10px); min-width: 230px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md); box-shadow: 0 24px 50px -20px rgba(23, 24, 28, .45); padding: 8px; display: flex; flex-direction: column; z-index: 40; }
+.t-menu-pop button { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 0 12px; border: 0; background: none; border-radius: 10px; text-align: left; font-weight: 500; }
+.t-menu-pop button:hover { background: var(--soft); }
+.t-menu-head { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px 12px; border-bottom: 1px solid var(--line); margin-bottom: 6px; overflow-wrap: anywhere; }
+.t-sync { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.t-sync svg { color: var(--leaf); }
+.t-sync-err svg { color: var(--accent); }
+.t-sync-cta { border: 1px dashed var(--line); background: transparent; border-radius: 999px; padding: 8px 14px; font-weight: 500; color: var(--ink-2); }
+.t-sync-cta:hover { border-color: var(--ink); color: var(--ink); }
+.t-modal-back { position: fixed; inset: 0; z-index: 100; background: rgba(15, 16, 19, .6); display: grid; place-items: center; padding: 16px; overflow-y: auto; }
+.t-modal { position: relative; width: 100%; max-width: 420px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 28px 24px 22px; box-shadow: 0 40px 80px -30px rgba(0, 0, 0, .6); }
+.t-modal-x { position: absolute; top: 12px; right: 12px; width: 36px; height: 36px; }
+.t-modal .t-h3 { padding-right: 40px; }
+.t-or { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; margin-top: 6px; }
+.t-or::before, .t-or::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.t-field { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.t-field input { min-height: 46px; padding: 0 14px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--paper); color: var(--ink); font: inherit; font-weight: 400; }
+.t-field input:focus { border-color: var(--pass-strong); outline: none; }
+.t-form-err { color: var(--accent); font-size: 14px; }
+.t-form-ok { color: var(--leaf); font-size: 14px; }
+.t-linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.t-modal-foot { display: flex; justify-content: space-between; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+.t-btn:disabled { opacity: .6; cursor: default; }
+.t-danger { border-color: var(--accent); color: var(--accent); background: transparent; }
+.t-danger:hover { background: var(--accent-soft); }
+
+/* accounts: pages */
+.t-page { padding-top: 40px; padding-bottom: 80px; }
+.t-g2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.t-chipbtn { border: 1px solid transparent; cursor: pointer; }
+.t-chipbtn.on { background: var(--ink); color: var(--paper); }
+.t-lb { padding: 0; overflow: hidden; }
+.t-lb-head, .t-lb-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) minmax(70px, auto); gap: 12px; align-items: center; padding: 10px 18px; }
+.t-lb-head { border-bottom: 1px solid var(--line); }
+.t-lb-row { text-decoration: none; border-bottom: 1px solid var(--line); min-height: 52px; }
+.t-lb-row:last-child { border-bottom: 0; }
+a.t-lb-row:hover { background: var(--soft); }
+.t-lb-row.me { background: var(--accent-soft); }
+.t-lb-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.t-lb-rank { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-weight: 500; color: var(--muted); }
+.t-lb-rank.r1 { color: #C79A1B; } .t-lb-rank.r2 { color: #8A929C; } .t-lb-rank.r3 { color: #B8742A; }
+.t-prof-head { display: flex; gap: 22px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+.t-statgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; }
+.t-statgrid > div { display: flex; flex-direction: column; }
+.t-statgrid b { font-family: var(--display); font-size: 22px; letter-spacing: -.02em; }
+.t-ach { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.t-ach-i { display: flex; gap: 14px; align-items: center; padding: 14px 16px; opacity: .55; }
+.t-ach-i.on { opacity: 1; border-color: var(--leaf); }
+.t-ach-ic { width: 42px; height: 42px; border-radius: 12px; background: var(--soft); display: grid; place-items: center; flex-shrink: 0; }
+.t-ach-i.on .t-ach-ic { background: var(--accent-soft); color: var(--accent); }
+.t-pick { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.t-pick button { width: 42px; height: 42px; border-radius: 12px; border: 2px solid var(--line); background: var(--paper); font-size: 20px; }
+.t-pick button.on { border-color: var(--ink); }
+@media (max-width: 960px) { .t-g2 { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 620px) {
+  .t-page { padding-top: 24px; }
+  .t-lb-head, .t-lb-row { grid-template-columns: 40px minmax(0, 1fr) auto; padding: 10px 12px; }
+  .t-prof-head { gap: 14px; }
+}
+
+/* sign-in gate on game pages */
+.t-gate { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 14px; padding: 56px 24px; max-width: 640px; margin: 24px auto 0; }
+.t-gate-ic { width: 56px; height: 56px; border-radius: 16px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; }
+.t-avatar { overflow: hidden; }
+.t-avatar img { width: 100%; height: 100%; object-fit: cover; display: block; }

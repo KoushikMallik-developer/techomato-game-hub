@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { assetBase } from '../config.js';
 import { Icon } from './Brand.jsx';
+import { hydrateGame, startAutoSync } from '../account/sync.js';
 
 // Mounts a game inside the frame and cleans it up on unmount. Every game module exports
 // mount(container, opts) and returns a cleanup function; the module is loaded lazily.
@@ -14,11 +15,15 @@ export default function GameCanvas({ game }) {
   useEffect(() => {
     let cancelled = false;
     let cleanup = null;
+    let stopSync = null;
     setStatus('loading');
-    game.load()
+    // signed-in players: bring the cloud save onto this device first, then keep it synced while playing
+    hydrateGame(game.id)
+      .then(() => game.load())
       .then((mod) => {
         if (cancelled || !mountRef.current) return;
         cleanup = mod.mount(mountRef.current, { assetBase: assetBase() });
+        stopSync = startAutoSync(game.id);
         setStatus('ready');
       })
       .catch((err) => {
@@ -28,6 +33,7 @@ export default function GameCanvas({ game }) {
     return () => {
       cancelled = true;
       if (cleanup) cleanup();
+      if (stopSync) stopSync(); // uploads the final save
     };
   }, [game]);
 

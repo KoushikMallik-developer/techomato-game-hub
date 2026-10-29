@@ -193,6 +193,8 @@ export class NetRoom extends Emitter {
           room.players.set(room.myId, room.meta);
           room.wireSignal();
           room.startPing();
+          // let the account layer show this room to friends
+          try { window.dispatchEvent(new CustomEvent('gamehub-room', { detail: { game, code: room.code } })); } catch { /* no window */ }
           resolve(room);
           room.emit('ready', room);
         });
@@ -403,6 +405,7 @@ export class NetRoom extends Emitter {
     this.links.forEach((l) => l.close());
     this.links.clear();
     if (this.signal) this.signal.close();
+    if (this.isHost) { try { window.dispatchEvent(new CustomEvent('gamehub-room', { detail: { game: this.game, code: null } })); } catch { /* no window */ } }
     this.emit('closed');
   }
 }

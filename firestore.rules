@@ -1,0 +1,110 @@
+rules_version = '2';
+// Techomato Games: accounts, cloud saves, leaderboards, friends.
+// The Spark (free) plan has no server code, so scores are validated here: owner-only writes, a hard cap per
+// board, scores can only go up, and updates are rate-limited. Keep the caps in sync with src/account/games.js.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function isOwner(uid) { return signedIn() && request.auth.uid == uid; }
+
+    // ── profiles ──
+    // avatar.photo may only point at Google, GitHub or Gravatar pictures (same list as src/account/profile.js)
+    function validPhoto(a) {
+      return !('photo' in a) || a.photo == null
+        || (a.photo is string && a.photo.matches('^https://(lh3[.]googleusercontent[.]com|avatars[.]githubusercontent[.]com|www[.]gravatar[.]com)/.{1,400}$'));
+    }
+    function validProfile(d) {
+      return d.keys().hasOnly(['name', 'avatar', 'friendCode', 'summary', 'points', 'achievements', 'room', 'createdAt', 'lastSeen'])
+        && d.name is string && d.name.size() >= 3 && d.name.size() <= 24
+        && d.friendCode is string
+        && d.summary is map && d.points is map && d.achievements is map
+        && d.achievements.size() <= 60 && d.summary.size() <= 8 && d.points.size() <= 8
+        && (d.avatar == null || (d.avatar is map && d.avatar.keys().hasOnly(['emoji', 'color', 'photo']) && validPhoto(d.avatar)));
+    }
+
+    match /users/{uid} {
+      allow read: if true;
+      allow create: if isOwner(uid) && validProfile(request.resource.data)
+        && request.resource.data.friendCode.matches('^[A-Z0-9]{8}$');
+      allow update: if isOwner(uid) && validProfile(request.resource.data)
+        && request.resource.data.friendCode == resource.data.friendCode
+        && request.resource.data.createdAt == resource.data.createdAt;
+      allow delete: if isOwner(uid);
+
+      // cloud save: one JSON string per game
+      match /saves/{game} {
+        allow read, delete: if isOwner(uid);
+        allow create, update: if isOwner(uid)
+          && game in ['ascendants', 'core-breach', 'horde-surge', 'midnight-pursuit']
+          && request.resource.data.keys().hasOnly(['json', 'progress', 'updatedAt'])
+          && request.resource.data.json is string && request.resource.data.json.size() < 200000
+          && request.resource.data.progress is number;
+      }
+
+      // weekly-leaderboard bookkeeping
+      match /private/{doc} {
+        allow read, write: if isOwner(uid);
+      }
+    }
+
+    // ── friend codes: look one up, can't list them ──
+    match /friendCodes/{code} {
+      allow get: if signedIn();
+      allow create: if signedIn() && code.matches('^[A-Z0-9]{8}$')
+        && request.resource.data.keys().hasOnly(['uid'])
+        && request.resource.data.uid == request.auth.uid;
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ── friendships: id is "<smaller uid>_<larger uid>" ──
+    match /friendships/{id} {
+      allow read: if signedIn() && request.auth.uid in resource.data.users;
+      allow create: if signedIn()
+        && request.resource.data.keys().hasOnly(['users', 'from', 'status', 'createdAt'])
+        && request.resource.data.users.size() == 2
+        && request.resource.data.users[0] < request.resource.data.users[1]
+        && id == request.resource.data.users[0] + '_' + request.resource.data.users[1]
+        && request.auth.uid in request.resource.data.users
+        && request.resource.data.from == request.auth.uid
+        && request.resource.data.status == 'pending';
+      // only the person who received the request can accept it
+      allow update: if signedIn() && request.auth.uid in resource.data.users
+        && request.auth.uid != resource.data.from
+        && resource.data.status == 'pending' && request.resource.data.status == 'accepted'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      allow delete: if signedIn() && request.auth.uid in resource.data.users;
+    }
+
+    // ── leaderboards: id is "<board>__<period>__<uid>" ──
+    function caps() {
+      return {
+        'global_points': 10000000,
+        'ascendants_wins': 5000, 'ascendants_kills': 100000, 'ascendants_xp': 5000000,
+        'core-breach_xp': 5000000, 'core-breach_wins': 5000, 'core-breach_kills': 100000,
+        'horde-surge_level': 5000, 'horde-surge_stars': 15000, 'horde-surge_kills': 1000000000,
+        'midnight-pursuit_races': 5000, 'midnight-pursuit_bounty': 1000000000, 'midnight-pursuit_speed': 450
+      };
+    }
+    function validScore(d, id) {
+      return d.keys().hasOnly(['board', 'period', 'uid', 'name', 'avatar', 'score', 'updatedAt'])
+        && d.uid == request.auth.uid
+        && id == d.board + '__' + d.period + '__' + request.auth.uid
+        && d.board in caps()
+        && d.period.matches('^(all|[0-9]{4}-W[0-9]{2})$')
+        && d.score is int && d.score > 0 && d.score <= caps()[d.board]
+        && d.name is string && d.name.size() >= 3 && d.name.size() <= 24
+        && (d.avatar == null || (d.avatar is map && validPhoto(d.avatar)))
+        && d.updatedAt == request.time;
+    }
+    match /scores/{id} {
+      allow read: if true;
+      allow create: if signedIn() && validScore(request.resource.data, id);
+      allow update: if signedIn() && validScore(request.resource.data, id)
+        && resource.data.uid == request.auth.uid
+        && request.resource.data.score >= resource.data.score
+        && request.time > resource.data.updatedAt + duration.value(10, 's');
+      allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+  }
+}

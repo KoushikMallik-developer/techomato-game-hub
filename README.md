@@ -200,6 +200,37 @@ A/C units), varied storefronts, leaf-card trees and a photo asphalt texture.
 More car models: `public/models/cars/README.txt`. Lighting, sky and road images: `public/assets/README.txt`.
 Three.js 3D games export `mount(container)` and set `engine: 'three'` in the registry.
 
+## Accounts, cloud saves and leaderboards (Firebase, free Spark plan)
+
+Optional. With the `VITE_FIREBASE_*` variables set (see `.env.example`) the site gets sign-in (Google, GitHub, email + password),
+a profile page, cloud saves, leaderboards, friends and achievements. Without them nothing changes: games keep saving to the device.
+
+```
+src/account/
+  firebase.js        lazy Firebase init (Auth + Firestore), skipped entirely when not configured
+  games.js           per game: save key, progress score, leaderboard boards, profile summary (derived from the
+                     save the game already writes, so games need no code changes)
+  sync.js            hydrateGame() before a game starts (better of device / cloud save wins, loser kept as <key>__backup),
+                     pushGame() every 5 min, when the tab hides and when the game closes; publishes stats and scores
+  leaderboard.js     scores/<board>__<period>__<uid>, all-time and weekly (ISO week) boards, ranks
+  friends.js         friend codes, requests, friendships; shows the online room code you host
+  achievements.js    site-wide achievements computed from per-game summaries
+  profile.js, AuthContext.jsx   profiles (users/<uid>) and the React auth state
+src/pages/Leaderboard.jsx, Profile.jsx, Friends.jsx   the pages (/leaderboard, /profile/<uid>, /friends)
+src/components/Account.jsx    header menu, sign-in dialog, sync badge
+firestore.rules, firestore.indexes.json, firebase.json   deploy these with the Firebase CLI
+```
+
+Setup:
+1. Firebase Console: create a project, add a Web app, copy the config into `.env` (and into Vercel's environment variables).
+2. Authentication > Sign-in method: enable Google, GitHub (create an OAuth app on GitHub; paste its client id/secret and set its callback URL to the one Firebase shows) and Email/Password.
+3. Authentication > Settings > Authorized domains: add your Vercel domain.
+4. Firestore Database: create it (production mode), then `npx firebase-tools deploy --only firestore` to publish the rules and index.
+
+The free plan has no server code, so scores are checked by the rules only: one writer per score, a cap per board, scores can only
+rise, and updates are rate-limited. That stops casual tampering but not a determined cheater who edits their own save.
+Real validation needs server code (Cloud Functions, Blaze plan). Change a board or cap in `games.js` and `firestore.rules` together.
+
 ## Add a new game
 
 1. Create `src/games/<name>/index.js` exporting:

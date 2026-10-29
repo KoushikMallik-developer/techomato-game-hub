@@ -16,6 +16,13 @@ const ICONS = {
   globe: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18',
   bolt: 'M13 2L4 14h7l-1 8 9-12h-7z',
   key: 'M4 7h16v10H4zM7 10h.01M10 10h.01M13 10h.01M16 10h.01M8 14h8',
+  trophy: 'M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0zM7 6H4v1a3 3 0 0 0 3 3M17 6h3v1a3 3 0 0 1-3 3',
+  user: 'M12 12a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9zM4 21a8 8 0 0 1 16 0',
+  logout: 'M9 4H5v16h4M16 8l4 4-4 4M20 12H9',
+  copy: 'M9 9h11v11H9zM5 15V4h11',
+  cloud: 'M7 18a4 4 0 0 1-.6-7.96A6 6 0 0 1 18 9.5 4.3 4.3 0 0 1 17.5 18z',
+  close: 'M6 6l12 12M18 6L6 18',
+  lock: 'M6 11h12v9H6zM8 11V8a4 4 0 0 1 8 0v3',
 };
 
 export function Icon({ name, size = 20, stroke = 1.9, className = '' }) {

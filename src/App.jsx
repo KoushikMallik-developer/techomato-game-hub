@@ -5,6 +5,11 @@ import { Link, usePath, navigate } from './router.jsx';
 import { SITE_NAME, TAGLINE } from './config.js';
 import { Logo, Icon } from './components/Brand.jsx';
 import { games } from './games/registry.js';
+import Leaderboard from './pages/Leaderboard.jsx';
+import Profile from './pages/Profile.jsx';
+import Friends from './pages/Friends.jsx';
+import { UserMenu, AuthModal } from './components/Account.jsx';
+import { useAccount } from './account/AuthContext.jsx';
 
 // light / dark, like Techomato: follows the system until the visitor picks one
 function useTheme() {
@@ -37,10 +42,15 @@ const scrollTo = (id) => (e) => {
 export default function App() {
   const path = usePath();
   const [dark, toggle] = useTheme();
+  const acc = useAccount();
   const m = path.match(/^\/play\/([\w-]+)/);
+  const pr = path.match(/^\/profile(?:\/([\w-]+))?\/?$/);
   let page;
   if (path === '/' || path === '') page = <Home />;
   else if (m) page = <GamePage key={m[1]} id={m[1]} />;
+  else if (path.startsWith('/leaderboard')) page = <Leaderboard />;
+  else if (path.startsWith('/friends')) page = <Friends />;
+  else if (pr) page = <Profile key={pr[1] || 'me'} uid={pr[1]} />;
   else page = <NotFound />;
   return (
     <div className="t-app">
@@ -51,16 +61,19 @@ export default function App() {
             <a href="#library" onClick={scrollTo('library')}>Library</a>
             <a href="#online" onClick={scrollTo('online')}>Play online</a>
             <a href="#how" onClick={scrollTo('how')}>How it works</a>
+            {acc && acc.enabled && <Link to="/leaderboard">Leaderboards</Link>}
           </nav>
           <div className="t-row">
             <button className="t-icon-btn" onClick={toggle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}>
               <Icon name={dark ? 'sun' : 'moon'} size={18} />
             </button>
+            <UserMenu />
             <Link to={`/play/${games[0].id}`} className="t-btn t-btn-accent t-nav-cta"><Icon name="play" size={16} />Play now</Link>
           </div>
         </div>
       </header>
       <main>{page}</main>
+      <AuthModal />
       <footer className="t-foot">
         <div className="t-wrap t-between">
           <div className="t-stack" style={{ gap: 6 }}>
