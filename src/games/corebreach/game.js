@@ -1860,8 +1860,8 @@ export class Game {
 
   openScoreboard() {
     this.uiOpen = 'sb';
-    const list = [...this.recs.values()].map((r) => ({ ...r, kills: r.k, deaths: r.d, assists: r.a }));
-    this.hud.el.screen.innerHTML = this.hud.scoreboard(list, this.myId, this.st.mode, this.st.score);
+    const list = [...this.recs.values()].map((r) => ({ ...r, kills: r.k, deaths: r.d, assists: r.a, ping: this.net && !r.bot ? this.net.pingOf(r.id) : undefined }));
+    this.hud.el.screen.innerHTML = this.hud.scoreboard(list, this.myId, this.st.mode, this.st.score, !!this.net);
   }
 
   closeUI() {

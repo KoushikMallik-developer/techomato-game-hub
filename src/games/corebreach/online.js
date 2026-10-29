@@ -156,6 +156,7 @@ export class Online {
       case 'snap': if (this.inGame) g.applySnap(m); break;
       case 'lobby': if (this.inGame) this.toLobby(); break;
       case 'chat': g.hud.chatLine(m.name, m.text, '#7ff5e2'); break;
+      case 'ping': this.pings = m.p; break;
       default: break;
     }
   }
@@ -192,8 +193,31 @@ export class Online {
 
   queue(e) { this.evq.push(e); }
 
+  // network ping per player, as measured by the host (a guest only has a direct link to the host)
+  pingOf(id) {
+    const room = this.room;
+    if (!room) return null;
+    if (this.isHost) {
+      if (id === room.myId) return 0;
+      const l = room.links.get(id);
+      return l && l.rtt ? Math.round(l.rtt) : null;
+    }
+    if (id === room.hostId) return Math.round(room.rtt()) || null;
+    if (id === room.myId) return Math.round(room.rtt()) || null;
+    const v = this.pings && this.pings[id];
+    return v === undefined || v === null ? null : v;
+  }
+
   tick(dt) {
     if (!this.room || !this.isHost || !this.inGame) return;
+    this.pingT = (this.pingT || 0) - dt;
+    if (this.pingT <= 0) {
+      this.pingT = 2;
+      const p = {};
+      this.room.links.forEach((l, id) => { p[id] = l.rtt ? Math.round(l.rtt) : null; });
+      p[this.room.myId] = 0;
+      this.room.broadcast({ t: 'ping', p }, false);
+    }
     if (this.evq.length) {
       this.room.broadcast({ t: 'evs', l: this.evq });
       this.evq = [];

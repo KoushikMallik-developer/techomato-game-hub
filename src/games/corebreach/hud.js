@@ -425,10 +425,16 @@ export class HUD {
       <div class="cb-row" style="margin-top:.8em"><button class="b" data-act="closebuy">Close (B)</button></div></div>`;
   }
 
-  scoreboard(players, me, mode, score) {
-    const rows = (list) => list.map((p) => `<tr class="${p.team}${p.id === me ? ' me' : ''}"><td>${esc(p.name)}${p.bot ? ' <small style="opacity:.6">BOT</small>' : ''}</td><td>${AGENT[p.agent].name}</td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.assists}</td>${mode === 'core' ? `<td>¤ ${p.credits}</td>` : ''}<td>${p.alive ? '' : '☠'}</td></tr>`).join('');
+  scoreboard(players, me, mode, score, online = false) {
+    const ping = (p) => {
+      if (p.bot) return '<td></td>';
+      if (p.ping === null || p.ping === undefined) return '<td>–</td>';
+      const c = p.ping < 80 ? '#7ff5a0' : p.ping < 150 ? '#ffd166' : '#ff6b6b';
+      return `<td style="color:${c}">${p.ping} ms</td>`;
+    };
+    const rows = (list) => list.map((p) => `<tr class="${p.team}${p.id === me ? ' me' : ''}"><td>${esc(p.name)}${p.bot ? ' <small style="opacity:.6">BOT</small>' : ''}</td><td>${AGENT[p.agent].name}</td><td>${p.kills}</td><td>${p.deaths}</td><td>${p.assists}</td>${mode === 'core' ? `<td>¤ ${p.credits}</td>` : ''}<td>${p.alive ? '' : '☠'}</td>${online ? ping(p) : ''}</tr>`).join('');
     const sorted = [...players].sort((a, b) => b.kills - a.kills);
-    const head = `<tr><th>PLAYER</th><th>AGENT</th><th>K</th><th>D</th><th>A</th>${mode === 'core' ? '<th>CREDITS</th>' : ''}<th></th></tr>`;
+    const head = `<tr><th>PLAYER</th><th>AGENT</th><th>K</th><th>D</th><th>A</th>${mode === 'core' ? '<th>CREDITS</th>' : ''}<th></th>${online ? '<th>PING</th>' : ''}</tr>`;
     if (mode !== 'core') return `<div class="cb-panel cb-sb"><h2>DEATHMATCH</h2><table>${head}${rows(sorted)}</table></div>`;
     return `<div class="cb-panel cb-sb"><h2>SCOREBOARD · ${score.red} – ${score.blue}</h2><table>${head}${rows(sorted.filter((p) => p.team === 'red'))}${rows(sorted.filter((p) => p.team === 'blue'))}</table></div>`;
   }
