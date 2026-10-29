@@ -101,12 +101,23 @@ export function AuthModal() {
   useEffect(() => {
     if (acc && acc.modal) { setMode(acc.modal === 'signup' ? 'signup' : 'signin'); setErr(''); setInfo(''); }
   }, [acc && acc.modal]);
+  const dialog = useRef(null);
   useEffect(() => {
     if (!acc || !acc.modal) return undefined;
-    const esc = (e) => { if (e.key === 'Escape') acc.closeAuth(); };
-    document.addEventListener('keydown', esc);
-    setTimeout(() => first.current && first.current.focus(), 30);
-    return () => document.removeEventListener('keydown', esc);
+    const opener = document.activeElement; // focus goes back here when the dialog closes
+    const onKey = (e) => {
+      if (e.key === 'Escape') { acc.closeAuth(); return; }
+      if (e.key !== 'Tab' || !dialog.current) return;
+      // keep Tab inside the dialog
+      const items = [...dialog.current.querySelectorAll('button:not([disabled]), input, a[href]')].filter((el) => el.offsetParent !== null);
+      if (!items.length) return;
+      const firstEl = items[0]; const lastEl = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === firstEl) { e.preventDefault(); lastEl.focus(); }
+      else if (!e.shiftKey && document.activeElement === lastEl) { e.preventDefault(); firstEl.focus(); }
+    };
+    document.addEventListener('keydown', onKey);
+    const t = setTimeout(() => first.current && first.current.focus(), 30);
+    return () => { clearTimeout(t); document.removeEventListener('keydown', onKey); if (opener && opener.focus && document.contains(opener)) opener.focus(); };
   }, [acc && acc.modal]);
 
   if (!acc || !acc.modal) return null;
@@ -124,7 +135,7 @@ export function AuthModal() {
 
   return (
     <div className="t-modal-back" onMouseDown={(e) => { if (e.target === e.currentTarget) acc.closeAuth(); }}>
-      <div className="t-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+      <div className="t-modal" ref={dialog} role="dialog" aria-modal="true" aria-labelledby="auth-title">
         <button className="t-icon-btn t-modal-x" onClick={acc.closeAuth} aria-label="Close"><Icon name="close" size={18} /></button>
         <h2 className="t-h3" id="auth-title">{title}</h2>
         <p className="t-muted t-small" style={{ marginTop: 6 }}>Save your progress across devices, climb the leaderboards and play with friends.</p>

@@ -17,6 +17,7 @@ export default function Leaderboard() {
   const [rows, setRows] = useState(null);
   const [mine, setMine] = useState(null);
   const [err, setErr] = useState('');
+  const [retry, setRetry] = useState(0);
 
   const boards = boardsFor(game);
   const board = boards[Math.min(boardIdx, boards.length - 1)];
@@ -30,7 +31,8 @@ export default function Leaderboard() {
     setRows(null); setMine(null); setErr('');
     (async () => {
       try {
-        const list = await topScores(board.id, per, 50);
+        // Firestore keeps retrying when it can't connect, so give up after a while instead of spinning forever
+        const list = await Promise.race([topScores(board.id, per, 50), new Promise((_, no) => setTimeout(() => no(new Error('timeout')), 12000))]);
         if (dead) return;
         setRows(list);
         if (uid) {
@@ -44,7 +46,7 @@ export default function Leaderboard() {
       }
     })();
     return () => { dead = true; };
-  }, [board.id, per, uid, acc && acc.enabled]);
+  }, [board.id, per, uid, retry, acc && acc.enabled]);
 
   if (!acc || !acc.enabled) return <AccountsOff />;
   return (
@@ -77,7 +79,12 @@ export default function Leaderboard() {
 
       <div className="t-card t-lb">
         <div className="t-lb-head t-small t-muted"><span>#</span><span>Player</span><span style={{ textAlign: 'right' }}>{board.label}</span></div>
-        {err && <p className="t-form-err" style={{ padding: 16 }}>{err}</p>}
+        {err && (
+          <div className="t-row" style={{ padding: 20, flexWrap: 'wrap' }}>
+            <p className="t-form-err">{err}</p>
+            <button className="t-btn t-btn-ghost t-btn-sm" onClick={() => setRetry((n) => n + 1)}>Try again</button>
+          </div>
+        )}
         {!err && rows === null && <p className="t-muted" style={{ padding: 24 }}>Loading…</p>}
         {!err && rows && rows.length === 0 && (
           <p className="t-muted" style={{ padding: 24 }}>No scores yet. Play a game while signed in and you'll be the first.</p>

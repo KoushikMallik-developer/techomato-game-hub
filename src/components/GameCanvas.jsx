@@ -5,7 +5,7 @@ import { hydrateGame, startAutoSync } from '../account/sync.js';
 
 // Mounts a game inside the frame and cleans it up on unmount. Every game module exports
 // mount(container, opts) and returns a cleanup function; the module is loaded lazily.
-export default function GameCanvas({ game }) {
+export default function GameCanvas({ game, locked = false, gate = null }) {
   const wrapRef = useRef(null);
   const mountRef = useRef(null);
   const [status, setStatus] = useState('loading');
@@ -16,6 +16,7 @@ export default function GameCanvas({ game }) {
     let cancelled = false;
     let cleanup = null;
     let stopSync = null;
+    if (locked) { setStatus('locked'); return undefined; } // signed-out: the frame shows the gate instead of the game
     setStatus('loading');
     // signed-in players: bring the cloud save onto this device first, then keep it synced while playing
     hydrateGame(game.id)
@@ -35,7 +36,7 @@ export default function GameCanvas({ game }) {
       if (cleanup) cleanup();
       if (stopSync) stopSync(); // uploads the final save
     };
-  }, [game]);
+  }, [game, locked]);
 
   useEffect(() => {
     const onFs = () => setFull(document.fullscreenElement === wrapRef.current || document.webkitFullscreenElement === wrapRef.current);
@@ -86,8 +87,9 @@ export default function GameCanvas({ game }) {
             )}
           </span>
         </div>
-        <div ref={wrapRef} className={`t-frame game-frame${full ? ' full' : ''}`} style={{ aspectRatio: ratio }}>
-          <div ref={mountRef} className="t-mount" />
+        <div ref={wrapRef} className={`t-frame game-frame${full ? ' full' : ''}${locked ? ' locked' : ''}`} style={{ aspectRatio: ratio }}>
+          {!locked && <div ref={mountRef} className="t-mount" />}
+          {locked && <div className="t-lock">{gate}</div>}
           {status === 'loading' && <div className="t-overlay"><span className="t-spinner" />Loading {game.title}</div>}
           {status === 'error' && <div className="t-overlay">{game.title} didn't load. Check your connection and reload the page.</div>}
         </div>

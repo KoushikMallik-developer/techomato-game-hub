@@ -3,6 +3,7 @@ import { games, genres, coverUrl } from '../games/registry.js';
 import { Link, navigate } from '../router.jsx';
 import { assetBase } from '../config.js';
 import { Icon } from '../components/Brand.jsx';
+import { useAccount } from '../account/AuthContext.jsx';
 
 const reduceMotion = () => typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -86,6 +87,7 @@ function GameCard({ game }) {
 }
 
 export default function Home() {
+  const accounts = !!(useAccount() || {}).enabled;
   const [genre, setGenre] = useState('All');
   const list = genre === 'All' ? games : games.filter((g) => g.genre === genre);
   const online = games.filter((g) => g.badges.includes('Online'));
@@ -161,7 +163,7 @@ export default function Home() {
           {[
             ['download', 'Nothing to install', 'Every game runs in the browser tab. Open the page and you are in.'],
             ['phone', 'Phone or keyboard', 'Touch controls appear on phones; on a computer use keyboard, mouse or a gamepad.'],
-            ['save', 'Progress saves', 'Levels, unlocks and settings are kept on your device between visits.'],
+            ['save', 'Progress saves', accounts ? 'Sign in once and your levels, unlocks and rank follow you to any device.' : 'Levels, unlocks and settings are kept on your device between visits.'],
           ].map(([ic, h, p]) => (
             <div key={h} className="t-card t-perk">
               <span className="t-perk-ic"><Icon name={ic} size={22} /></span>

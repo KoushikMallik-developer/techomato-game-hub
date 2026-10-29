@@ -54,6 +54,7 @@ export default function App() {
   else page = <NotFound />;
   return (
     <div className="t-app">
+      <a className="t-skip" href="#main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('main'); if (m) { m.focus(); m.scrollIntoView(); } }}>Skip to content</a>
       <header className="t-nav">
         <div className="t-nav-in">
           <Link to="/" aria-label={`${SITE_NAME} home`} className="t-brand"><Logo /></Link>
@@ -68,14 +69,14 @@ export default function App() {
               <Icon name={dark ? 'sun' : 'moon'} size={18} />
             </button>
             <UserMenu />
-            <Link to={`/play/${games[0].id}`} className="t-btn t-btn-accent t-nav-cta"><Icon name="play" size={16} />Play now</Link>
+            <Link to={`/play/${games[0].id}`} className="t-btn t-btn-accent t-nav-cta" aria-label="Play now"><Icon name="play" size={16} /><span className="t-nav-cta-label">Play now</span></Link>
           </div>
         </div>
       </header>
-      <main>{page}</main>
+      <main id="main" tabIndex={-1}>{page}</main>
       <AuthModal />
       <footer className="t-foot">
-        <div className="t-wrap t-between">
+        <div className="t-wrap t-between t-foot-in">
           <div className="t-stack" style={{ gap: 6 }}>
             <Logo size={26} />
             <span className="t-muted t-small">{TAGLINE}</span>

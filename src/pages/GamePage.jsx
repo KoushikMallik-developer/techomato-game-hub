@@ -59,22 +59,28 @@ export default function GamePage({ id }) {
         </div>
       </div>
 
-      {gated ? (
-        <div className="t-gate t-card">
-          <span className="t-gate-ic"><Icon name={acc.ready ? 'lock' : 'cloud'} size={26} /></span>
-          {acc.ready ? (<>
-            <h2 className="t-h3">Sign in to play {game.title}</h2>
-            <p className="t-muted" style={{ maxWidth: 440 }}>Your progress, scores and leaderboard rank are saved to your account, so you can pick up on any device. It's free.</p>
-            <div className="t-row" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
-              <button className="t-btn t-btn-accent" onClick={() => acc.openAuth('signin')}>Sign in</button>
-              <button className="t-btn t-btn-ghost" onClick={() => acc.openAuth('signup')}>Create account</button>
+      <GameCanvas
+        key={game.id}
+        game={game}
+        locked={gated}
+        gate={gated && (
+          <>
+            <Cover game={game} className="t-lock-art" eager />
+            <div className="t-lock-body">
+              {acc.ready ? (<>
+                <span className="t-lock-ic"><Icon name="lock" size={22} /></span>
+                <h2 className="t-lock-h">Sign in to play {game.title}</h2>
+                <p className="t-lock-p">Your progress, scores and leaderboard rank are saved to your account, so you can pick up on any device. It's free.</p>
+                <div className="t-row" style={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+                  <button className="t-btn t-btn-accent" onClick={() => acc.openAuth('signin')}>Sign in</button>
+                  <button className="t-btn t-btn-white" onClick={() => acc.openAuth('signup')}>Create account</button>
+                </div>
+              </>) : <><span className="t-spinner" /><p className="t-lock-p">Checking your account…</p></>}
             </div>
-          </>) : <p className="t-muted">Checking your account…</p>}
-        </div>
-      ) : (<>
-        <GameCanvas key={game.id} game={game} />
-        <div style={{ marginTop: 12 }}><SyncBadge /></div>
-      </>)}
+          </>
+        )}
+      />
+      {!gated && <div style={{ marginTop: 12 }}><SyncBadge /></div>}
 
       <div className="t-play-info">
         <section className="t-card">
