@@ -10,7 +10,8 @@
 //
 // Settings live in src/config.js (NET): your own signalling server, and TURN servers for networks that
 // block direct connections.
-import { NET } from '../../config.js';
+import { NET, DEFAULT_SIGNAL } from '../../config.js';
+import { fb, accountsEnabled } from '../../account/firebase.js';
 
 const CODE_CHARS = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 const randCode = (n) => Array.from({ length: n }, () => CODE_CHARS[Math.floor(Math.random() * CODE_CHARS.length)]).join('');
@@ -62,6 +63,102 @@ class Signal extends Emitter {
     try { this.send({ type: 'LEAVE' }); this.ws.close(); } catch { /* closed */ }
   }
 }
+
+// The same signalling, carried by Firestore instead of a WebSocket server (used when accounts are on and the
+// player is signed in; the free public PeerJS server has stopped passing messages between peers).
+// rooms/{hostId} marks an open room; signals/{auto} carries a batch of handshake messages to one peer, which
+// deletes it once read. Messages are batched (~60 ms) and written in order, so an OFFER always lands before
+// the CANDIDATEs that follow it.
+class FireSignal extends Emitter {
+  constructor(id, { host = false, peer = null } = {}) {
+    super();
+    this.id = id;
+    this.host = host;
+    this.open = false;
+    this.out = new Map(); // dst -> messages waiting to be written
+    this.seq = 0;
+    this.chain = Promise.resolve();
+    this.start(peer).catch((e) => { console.warn('[net] firestore signalling', e); this.emit('error', 'Could not reach the matchmaking server'); });
+  }
+
+  async start(peer) {
+    const { db, fs, auth } = await fb();
+    if (auth.authStateReady) await auth.authStateReady();
+    const uid = auth.currentUser && auth.currentUser.uid;
+    if (!uid) throw new Error('not signed in');
+    this.f = { db, fs, uid };
+    if (this.host) {
+      // creating an existing room is an update, which the rules refuse: that code is taken
+      try {
+        await fs.runTransaction(db, async (tx) => {
+          const ref = fs.doc(db, 'rooms', this.id);
+          if ((await tx.get(ref)).exists()) throw new Error('taken');
+          tx.set(ref, { uid, createdAt: fs.serverTimestamp() });
+        });
+      } catch (e) {
+        if (String(e.message).includes('taken') || e.code === 'permission-denied') { this.emit('taken'); return; }
+        throw e;
+      }
+    }
+    if (this.closed) return;
+    this.unsub = fs.onSnapshot(fs.query(fs.collection(db, 'signals'), fs.where('dst', '==', this.id)), (snap) => {
+      const docs = snap.docChanges().filter((c) => c.type === 'added').map((c) => c.doc).sort((a, b) => (a.data().seq || 0) - (b.data().seq || 0));
+      docs.forEach((d) => {
+        fs.deleteDoc(d.ref).catch(() => {});
+        let list = [];
+        try { list = JSON.parse(d.data().msgs); } catch { /* bad batch */ }
+        list.forEach((m) => this.emit('msg', { ...m, src: d.data().src }));
+      });
+    }, (e) => { console.warn('[net] signal listener', e); this.emit('error', 'Lost the matchmaking connection'); });
+    this.open = true;
+    this.emit('open');
+    if (peer) {
+      const room = await fs.getDoc(fs.doc(db, 'rooms', peer)).catch(() => null);
+      if (room && !room.exists()) this.emit('msg', { type: 'EXPIRE', src: peer });
+    }
+  }
+
+  send(m) {
+    if (!m.dst || this.closed) return; // heartbeats and leave notices need no Firestore write
+    if (!this.out.has(m.dst)) this.out.set(m.dst, []);
+    this.out.get(m.dst).push({ type: m.type, payload: m.payload });
+    clearTimeout(this.flushT);
+    this.flushT = setTimeout(() => this.flush(), 60);
+  }
+
+  flush() {
+    if (!this.f) { this.flushT = setTimeout(() => this.flush(), 100); return; }
+    const { db, fs, uid } = this.f;
+    const batches = [...this.out.entries()];
+    this.out.clear();
+    batches.forEach(([dst, msgs]) => {
+      const seq = ++this.seq;
+      this.chain = this.chain.then(() => fs.addDoc(fs.collection(db, 'signals'), { dst, src: this.id, uid, seq, msgs: JSON.stringify(msgs), t: fs.serverTimestamp() })).catch((e) => console.warn('[net] signal write', e));
+    });
+  }
+
+  close() {
+    this.closed = true;
+    this.open = false;
+    clearTimeout(this.flushT);
+    if (this.unsub) this.unsub();
+    if (this.host && this.f) this.f.fs.deleteDoc(this.f.fs.doc(this.f.db, 'rooms', this.id)).catch(() => {});
+    this.emit('close');
+  }
+}
+
+// Firestore when the player is signed in, otherwise the WebSocket signalling server.
+let fireOk = null;
+async function useFirestore() {
+  if (NET.signalUrl !== DEFAULT_SIGNAL || !accountsEnabled) return false;
+  if (fireOk === null) {
+    fireOk = fb().then(async ({ auth }) => { if (auth.authStateReady) await auth.authStateReady(); return !!auth.currentUser; }).catch(() => false);
+  }
+  const ok = await fireOk;
+  fireOk = null; // check again next time (the player may sign in or out)
+  return ok;
+}
+function makeSignal(fire, id, opts) { return fire ? new FireSignal(id, opts) : new Signal(NET.signalUrl, id); }
 
 // One WebRTC link to another player.
 class Link extends Emitter {
@@ -177,7 +274,7 @@ export class NetRoom extends Emitter {
 
   // Open a new room. Resolves to the room once it is registered with the signalling server.
   static async host(game, meta, codeLen = 5, maxPlayers = null) {
-    await loadIceServers();
+    const [, fire] = await Promise.all([loadIceServers(), useFirestore()]);
     return new Promise((resolve, reject) => {
       const room = new NetRoom(game, meta);
       room.isHost = true;
@@ -186,7 +283,7 @@ export class NetRoom extends Emitter {
       const attempt = () => {
         room.code = randCode(codeLen);
         room.myId = NetRoom.hostId(game, room.code);
-        room.signal = new Signal(NET.signalUrl, room.myId);
+        room.signal = makeSignal(fire, room.myId, { host: true });
         room.signal.on('taken', () => { room.signal.close(); if (++tries < 5) attempt(); else reject(new Error('Could not create a room')); });
         room.signal.on('error', (e) => { if (!room.signal.open) reject(new Error(e)); });
         room.signal.on('open', () => {
@@ -205,14 +302,14 @@ export class NetRoom extends Emitter {
 
   // Join a room by code. Resolves once the link to the host is open.
   static async join(game, code, meta, timeoutMs = 20000) {
-    await loadIceServers();
+    const [, fire] = await Promise.all([loadIceServers(), useFirestore()]);
     return new Promise((resolve, reject) => {
       const room = new NetRoom(game, meta);
       room.isHost = false;
       room.code = code.toUpperCase().replace(/[^A-Z0-9]/g, '');
       room.hostId = NetRoom.hostId(game, room.code);
       room.myId = `gh-${game}-p${randToken()}`.toLowerCase();
-      room.signal = new Signal(NET.signalUrl, room.myId);
+      room.signal = makeSignal(fire, room.myId, { peer: room.hostId });
       let done = false;
       const fail = (msg) => { if (done) return; done = true; room.close(); reject(new Error(msg)); };
       const timer = setTimeout(() => {
@@ -264,6 +361,11 @@ export class NetRoom extends Emitter {
       } else if (m.type === 'CANDIDATE') {
         const l = this.links.get(m.src);
         if (l && p.candidate) l.onCandidate(p.candidate);
+        else if (p.candidate) { // arrived before the offer: keep it for the link
+          if (!this.early) this.early = new Map();
+          if (!this.early.has(m.src)) this.early.set(m.src, []);
+          this.early.get(m.src).push(p.candidate);
+        }
       } else if (m.type === 'LEAVE' && this.links.has(m.src)) {
         this.dropLink(m.src);
       }
@@ -273,6 +375,7 @@ export class NetRoom extends Emitter {
   addLink(id, initiator) {
     const link = new Link(this, id, initiator);
     this.links.set(id, link);
+    if (this.early && this.early.has(id)) { this.early.get(id).forEach((c) => link.onCandidate(c)); this.early.delete(id); }
     link.on('data', (m) => this.onData(link, m));
     link.on('down', () => this.dropLink(id));
     return link;

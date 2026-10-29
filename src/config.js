@@ -18,8 +18,11 @@ export const TAGLINE = 'Free 3D games that run in your browser. No downloads.';
 const env = (typeof import.meta !== 'undefined' && import.meta.env) || {};
 const turnUrls = (env.VITE_TURN_URLS || '').split(',').map((s) => s.trim()).filter(Boolean);
 
+// The public PeerJS server is only a fallback: when accounts (Firebase) are on and the player is signed in, the
+// handshake goes through Firestore instead (see src/games/shared/net.js). Setting VITE_SIGNAL_URL forces that server.
+export const DEFAULT_SIGNAL = 'wss://0.peerjs.com/peerjs?key=peerjs';
 export const NET = {
-  signalUrl: env.VITE_SIGNAL_URL || 'wss://0.peerjs.com/peerjs?key=peerjs',
+  signalUrl: env.VITE_SIGNAL_URL || DEFAULT_SIGNAL,
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     { urls: 'stun:stun1.l.google.com:19302' },
