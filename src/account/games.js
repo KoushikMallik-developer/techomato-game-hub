@@ -48,6 +48,18 @@ export const ACCOUNT_GAMES = {
     ],
     summary: (s) => ({ level: Math.max(1, n(s.level)), stars: sum(s.stars), wins: n(s.stats?.wins), bosses: n(s.stats?.bosses), endless: n(s.endless?.best) }),
   },
+  'sky-hopper': {
+    title: 'Sky Hopper',
+    key: 'sky-hopper-save',
+    level: (s) => Math.max(1, n(s.level)),
+    progress: (s) => Math.max(1, n(s.level)) * 1000 + sum(s.stars),
+    points: (s) => Math.max(1, n(s.level)) * 80 + sum(s.stars) * 15 + n(s.stats?.bosses) * 100,
+    boards: [
+      { id: 'level', label: 'Furthest level', get: (s) => Math.max(1, n(s.level)) },
+      { id: 'stars', label: 'Stars earned', get: (s) => sum(s.stars) },
+    ],
+    summary: (s) => ({ level: Math.max(1, n(s.level)), stars: sum(s.stars), bosses: n(s.stats?.bosses), stomps: n(s.stats?.stomps) }),
+  },
   'midnight-pursuit': {
     title: 'Midnight Pursuit',
     key: 'gamehub-midnight-pursuit-v1',
