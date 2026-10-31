@@ -28,8 +28,19 @@ class Quads {
   get empty() { return this.p.length === 0; }
 }
 
+// Playful pastel stucco: every building picks one colour from its area's palette (multiplies the cream plaster).
+// Defenders' side leans mint, aqua and butter; attackers' side coral, apricot and rose; the plaza mixes everything.
 const THEME_TINT = {
-  def: [0.93, 0.96, 1.0], atk: [1.0, 0.93, 0.87], sand: [1, 0.96, 0.88], plaza: [1, 0.98, 0.95], tile: [0.97, 0.97, 0.98],
+  def: [[0.6, 1.0, 0.82], [0.58, 0.88, 1.0], [1.0, 0.96, 0.5], [0.82, 0.7, 1.0]],
+  atk: [[1.0, 0.56, 0.42], [1.0, 0.74, 0.36], [1.0, 0.64, 0.74], [0.96, 0.42, 0.36]],
+  sand: [[1.0, 0.86, 0.4], [1.0, 0.68, 0.4], [0.98, 0.92, 0.7]],
+  plaza: [[1.0, 0.93, 0.78], [1.0, 0.66, 0.6], [0.6, 0.96, 0.96], [1.0, 0.86, 0.4], [0.78, 0.7, 1.0]],
+  tile: [[0.97, 0.97, 0.98]],
+};
+const pickTint = (th, a, b) => {
+  const list = THEME_TINT[th] || THEME_TINT.plaza;
+  const h = Math.imul((a >> 2) + 31, 73856093) ^ Math.imul((b >> 3) + 17, 19349663);
+  return list[(h >>> 0) % list.length];
 };
 
 export function buildMap(level, quality = 'medium') {
@@ -66,9 +77,9 @@ export function buildMap(level, quality = 'medium') {
     Q.quad([x0, mid, z0], [x1, mid, z1], [x1, WALL_H, z1], [x0, WALL_H, z0], n, [[u0, mid / span], [u1, mid / span], [u1, WALL_H / span], [u0, WALL_H / span]], tint);
     // stone skirting at the foot of the wall and a moulded cornice under the top
     const off = (d) => [n[0] * d, n[2] * d];
-    const band = (ya, yb, d, shade) => {
+    const band = (ya, yb, d, shade, accent = null) => {
       const [ox, oz] = off(d);
-      const c = tint.map((v) => v * shade);
+      const c = accent || tint.map((v) => v * shade);
       const ua = (x0 + z0) / 2; const ub = ua + len / 2;
       trims.quad([x0 + ox, ya, z0 + oz], [x1 + ox, ya, z1 + oz], [x1 + ox, yb, z1 + oz], [x0 + ox, yb, z0 + oz], n, [[ua, ya / 2], [ub, ya / 2], [ub, yb / 2], [ua, yb / 2]], c);
       trims.quad([x0 + ox, yb, z0 + oz], [x1 + ox, yb, z1 + oz], [x1, yb, z1], [x0, yb, z0], [0, 1, 0], [[ua, 0], [ub, 0], [ub, d], [ua, d]], c);
@@ -76,6 +87,8 @@ export function buildMap(level, quality = 'medium') {
     };
     if (y0 < WALL_H - 1) band(y0, y0 + 0.55, 0.07, 0.8);
     band(WALL_H - 0.42, WALL_H - 0.12, 0.16, 1.0);
+    // colour-blocking: a bold accent stripe across the wall, in the colour opposite the building's own
+    if (WALL_H - y0 > 4.2) band(y0 + 2.55, y0 + 2.9, 0.09, 1, tint[0] > tint[2] + 0.12 ? [0.12, 0.5, 0.55] : [0.95, 0.42, 0.34]);
   };
   // the four directions: neighbour offset, face plane and orientation
   const dirs = [
@@ -112,8 +125,8 @@ export function buildMap(level, quality = 'medium') {
           const y0 = Math.min(T(i + di, j + dj), nk === 3 ? 0 : 99);
           const blk = isBlockCell(i, j);
           const th = themeAt(i + di, j + dj);
-          const tint = THEME_TINT[th] || THEME_TINT.plaza;
-          if (run && run.e === b - 1 && run.y0 === y0 && run.blk === blk && run.th === th) run.e = b;
+          const tint = pickTint(th, a, b);
+          if (run && run.e === b - 1 && run.y0 === y0 && run.blk === blk && run.th === th && run.tint === tint) run.e = b;
           else { flush(); run = { s: b, e: b, y0, blk, th, tint }; }
         } else flush();
       }
@@ -238,7 +251,7 @@ export function buildMap(level, quality = 'medium') {
       const v = i < W && K(i, j) === 0 && nearOpen(L, i, j, 40);
       if (v && s < 0) s = i;
       if (!v && s >= 0) {
-        roofs.quad([X(s), WALL_H, Z(j) + 1], [X(i), WALL_H, Z(j) + 1], [X(i), WALL_H, Z(j)], [X(s), WALL_H, Z(j)], [0, 1, 0], [[X(s) / 3, (Z(j) + 1) / 3], [X(i) / 3, (Z(j) + 1) / 3], [X(i) / 3, Z(j) / 3], [X(s) / 3, Z(j) / 3]], [0.7, 0.66, 0.62]);
+        roofs.quad([X(s), WALL_H, Z(j) + 1], [X(i), WALL_H, Z(j) + 1], [X(i), WALL_H, Z(j)], [X(s), WALL_H, Z(j)], [0, 1, 0], [[X(s) / 3, (Z(j) + 1) / 3], [X(i) / 3, (Z(j) + 1) / 3], [X(i) / 3, Z(j) / 3], [X(s) / 3, Z(j) / 3]], [0.98, 0.96, 0.92]);
         s = -1;
       }
     }
@@ -285,6 +298,26 @@ export function buildMap(level, quality = 'medium') {
       wl.position.set(best.x + best.nx * 0.03, 4.2, best.z + best.nz * 0.03);
       wl.lookAt(best.x + best.nx, 4.2, best.z + best.nz);
       group.add(wl);
+    }
+    // beacon: a soft column of light and a pulsing ring so each site reads from across the map
+    {
+      const col = new THREE.Color(color);
+      const mat = new THREE.ShaderMaterial({
+        transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending,
+        uniforms: { c: { value: col }, t: { value: 0 } },
+        vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+        fragmentShader: 'uniform vec3 c; uniform float t; varying vec2 vUv; void main(){ float up = 1.0 - vUv.y; float a = pow(up, 1.7) * (0.34 + 0.08 * sin(t * 2.0 + vUv.x * 12.0)); gl_FragColor = vec4(c * 1.3, a); }',
+      });
+      const by = baseAt(L, s.c[0], s.c[1]);
+      const beam = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.9, 15, 28, 1, true), mat);
+      beam.position.set(s.c[0], by + 7.5, s.c[1] + 4);
+      beam.renderOrder = 4;
+      beam.onBeforeRender = () => { mat.uniforms.t.value = performance.now() / 1000; };
+      group.add(beam);
+      const ring = new THREE.Mesh(new THREE.RingGeometry(2.1, 2.45, 48), new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.85, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3 }));
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.set(s.c[0], by + 0.04, s.c[1] + 4);
+      group.add(ring);
     }
     // plant zone: a dashed painted border
     const lines = new Quads();
@@ -416,7 +449,7 @@ const SHOP_NAMES = ['CAFFÈ SOLE', 'PANIFICIO', 'FARMACIA', 'TRATTORIA', 'ALBERG
 
 function buildDecor(L, K, T, X, Z, dirs, isBlockCell, rnd, mats) {
   const g = new THREE.Group();
-  const lists = { win: [], door: [], ac: [], pipe: [], ivy: [], sign: [], balc: [] };
+  const lists = { win: [], door: [], ac: [], pipe: [], ivy: [], sign: [], balc: [], awn: [[], [], []], plant: [] };
   const signs = [];
   const place = (list, w, h, cx, y, cz, n, depth = 0.02) => {
     const p = new THREE.PlaneGeometry(w, h);
@@ -440,9 +473,12 @@ function buildDecor(L, K, T, X, Z, dirs, isBlockCell, rnd, mats) {
         if (straight && (a + (h % 3)) % 5 === 0) {
           place(lists.win, 1.05, 1.48, cx, y0 + 3.9, cz, n);
           if (h % 3 === 1) lists.balc.push([cx, y0 + 3.08, cz, Math.atan2(n[0], n[2])]);
-          if (h % 4 === 0) place(lists.win, 1.05, 1.48, cx, y0 + 1.75, cz, n);
+          if (h % 4 === 0) { place(lists.win, 1.05, 1.48, cx, y0 + 1.75, cz, n); if (y0 < 0.5) lists.plant.push([cx + n[0] * 0.3, y0, cz + n[2] * 0.3, 0, h]); }
         } else if (straight && a % 13 === 4 && y0 < 0.5) {
           place(lists.door, 1.2, 2.25, cx, y0 + 1.125, cz, n);
+          // a striped awning over the door and a flower pot on each side
+          lists.awn[h % 3].push([cx + n[0] * 0.01, y0 + 2.62, cz + n[2] * 0.01, Math.atan2(n[0], n[2])]);
+          [-1, 1].forEach((sd, q) => { if ((h >> q) % 3 !== 0) lists.plant.push([cx + n[0] * 0.3 + ti * sd * 1.0, y0, cz + n[2] * 0.3 + tj * sd * 1.0, 0, h + q]); });
           if (h % 2 === 0) signs.push({ cx, y: y0 + 2.75, cz, n, name: SHOP_NAMES[h % SHOP_NAMES.length] });
         } else if (straight && a % 11 === 6) {
           lists.ac.push([cx + n[0] * 0.17, y0 + 2.9, cz + n[2] * 0.17, Math.atan2(n[0], n[2])]);
@@ -471,6 +507,34 @@ function buildDecor(L, K, T, X, Z, dirs, isBlockCell, rnd, mats) {
   inst(lists.ac, PR.acParts(), { body: new THREE.MeshStandardMaterial({ color: 0xd9d6cf, roughness: 0.5, metalness: 0.3 }), dark: new THREE.MeshStandardMaterial({ color: 0x24262a, roughness: 0.6, metalness: 0.4 }) });
   inst(lists.balc, PR.balconyParts(), { slab: mats.cap, iron: new THREE.MeshStandardMaterial({ color: 0x1d1f22, roughness: 0.5, metalness: 0.6 }) });
   M(lists.pipe, new THREE.MeshStandardMaterial({ color: 0x7a7f86, roughness: 0.4, metalness: 0.8 }));
+  // awnings: cream stripes alternating with red, teal or sunny yellow
+  const stripeTex = (c1) => {
+    const c = document.createElement('canvas'); c.width = 128; c.height = 8;
+    const x = c.getContext('2d');
+    for (let k = 0; k < 8; k++) { x.fillStyle = k % 2 ? '#fff4dc' : c1; x.fillRect(k * 16, 0, 16, 8); }
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = THREE.RepeatWrapping; t.anisotropy = 4;
+    return t;
+  };
+  const awnParts = PR.awningParts();
+  ['#e8483c', '#1fa5a0', '#f5b21a'].forEach((col, k) => {
+    if (!lists.awn[k].length) return;
+    const cloth = new THREE.MeshStandardMaterial({ map: stripeTex(col), roughness: 0.85, side: THREE.DoubleSide });
+    inst(lists.awn[k], awnParts, { cloth, iron: new THREE.MeshStandardMaterial({ color: 0x2b2d31, roughness: 0.5, metalness: 0.6 }) });
+  });
+  // flower pots: a few colour combinations
+  if (lists.plant.length) {
+    const pp = PR.planterParts();
+    const flowers = [['#ff5d8f', '#ffd23f'], ['#ffffff', '#ff8a3c'], ['#b887ff', '#ffe66b']];
+    flowers.forEach((fc, k) => {
+      const list = lists.plant.filter((p) => p[4] % 3 === k);
+      inst(list, pp, {
+        pot: new THREE.MeshStandardMaterial({ color: 0xc8643c, roughness: 0.85 }),
+        leaf: new THREE.MeshStandardMaterial({ color: 0x3f9a46, roughness: 0.8, flatShading: true }),
+        flowerA: new THREE.MeshStandardMaterial({ color: fc[0], roughness: 0.6 }),
+        flowerB: new THREE.MeshStandardMaterial({ color: fc[1], roughness: 0.6 }),
+      });
+    });
+  }
   M(lists.ivy, new THREE.MeshStandardMaterial({ map: TX.ivyTex(), alphaTest: 0.45, side: THREE.DoubleSide, roughness: 0.9 }));
   const signCols = [['#1f4e5f', '#f4ead2'], ['#6a2430', '#f6e7c9'], ['#2f4a2a', '#efe6c8'], ['#f0e6d0', '#7a2a2a']];
   signs.slice(0, 14).forEach((s, k) => {
@@ -574,10 +638,11 @@ function makeMaterials() {
   const pl = TX.plaster(1);
   const st = TX.stone(2);
   const st2 = TX.stone(9, '#b8ad98');
-  const tl = TX.tiles(3);
-  const tlCool = TX.tiles(13, ['#c3c2b6', '#cfcdc0', '#b8b8ab']);
-  const tlWarm = TX.tiles(23, ['#d2a88a', '#dcb698', '#c69c7e']);
-  const sl = TX.slabs(4);
+  // every floor is loose desert sand: a touch cooler on the defenders' side, rosier on the attackers'
+  const tl = TX.sandFloor(31, ['#e8d3a6', '#e0c896', '#ecd9b0']);
+  const tlCool = TX.sandFloor(32, ['#e6d8b4', '#ddcfa8', '#eaddbc']);
+  const tlWarm = TX.sandFloor(33, ['#ecce9e', '#e4c18c', '#f0d6ac']);
+  const sl = TX.sandFloor(34, ['#eddbb0', '#e5cf9f', '#f1e2bc']);
   const sd = TX.sand(5);
   const mt = TX.metal(6, '#2f7d86');
   const cr = TX.crate(7);
@@ -590,7 +655,7 @@ function makeMaterials() {
     cap: std(st, { color: 0xeeeeee }),
     ledge: std(st, { vertexColors: true }),
     trim: std(st, { vertexColors: true, side: THREE.DoubleSide }),
-    roof: weather(std(st2, { vertexColors: true, color: 0xb0a898 }), 0.6),
+    roof: weather(std(TX.sandFloor(35, ['#ead9b8', '#e2cfa8', '#efe0c2']), { vertexColors: true }), 0.6),
     floor: {
       plaza: std(sl), tile: std(tl), sand: std(sd), def: std(tlCool), atk: std(tlWarm), stair: std(st),
     },

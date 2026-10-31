@@ -65,5 +65,13 @@ export class Sound {
   click() { if (!this.ctx) return; const t = this.ctx.currentTime; this.tone(t, 0.05, { type: 'triangle', f: 1400, g: 0.1 }); }
   win() { if (!this.ctx) return; const t = this.ctx.currentTime; [523, 659, 784, 1047, 1319].forEach((f, k) => this.tone(t + k * 0.1, 0.45, { type: 'triangle', f, g: 0.22 })); }
   lose() { if (!this.ctx) return; const t = this.ctx.currentTime; [392, 330, 262, 196].forEach((f, k) => this.tone(t + k * 0.16, 0.5, { type: 'triangle', f, g: 0.2 })); }
+  power(kind) { if (!this.ctx) return; const t = this.ctx.currentTime; const base = kind === 'freeze' ? 660 : kind === 'bomb' ? 220 : 440; [1, 1.25, 1.5, 2].forEach((m, k) => this.tone(t + k * 0.05, 0.25, { type: kind === 'freeze' ? 'sine' : 'square', f: base * m, g: 0.08 })); this.noise(t, 0.4, { type: 'highpass', f: 3000, f2: 800, g: 0.12 }); }
+  combo(tier) { if (!this.gate('combo', 0.2)) return; const t = this.ctx.currentTime; const f = 660 * Math.pow(1.122, tier); this.tone(t, 0.18, { type: 'triangle', f, g: 0.14 }); this.tone(t + 0.08, 0.3, { type: 'triangle', f: f * 1.5, g: 0.12 }); }
+  arrow() { if (!this.gate('arrow', 0.12)) return; const t = this.ctx.currentTime; this.noise(t, 0.18, { type: 'bandpass', f: 2600, f2: 900, q: 3, g: 0.12 }); this.tone(t, 0.06, { type: 'triangle', f: 700, f2: 300, g: 0.06 }); }
+  clang() { if (!this.gate('clang', 0.08)) return; const t = this.ctx.currentTime; this.tone(t, 0.18, { type: 'square', f: 1800 + Math.random() * 400, f2: 900, g: 0.04 }); this.noise(t, 0.06, { type: 'highpass', f: 4000, g: 0.06 }); }
+  boom() { if (!this.gate('boom', 0.1)) return; const t = this.ctx.currentTime; this.noise(t, 0.45, { type: 'lowpass', f: 1200, f2: 80, g: 0.5 }); this.tone(t, 0.3, { f: 110, f2: 40, g: 0.3 }); }
+  laser() { if (!this.ctx) return; const t = this.ctx.currentTime; this.tone(t, 1.1, { type: 'sawtooth', f: 180, f2: 900, g: 0.12 }); this.tone(t, 1.1, { type: 'square', f: 92, f2: 460, g: 0.06 }); }
+  thunder() { if (!this.ctx) return; const t = this.ctx.currentTime; this.noise(t, 2.2, { type: 'lowpass', f: 500, f2: 40, g: 0.6 }); this.noise(t + 0.08, 0.3, { type: 'bandpass', f: 1800, g: 0.25 }); }
+  wave() { if (!this.ctx) return; const t = this.ctx.currentTime; [392, 523, 659, 784].forEach((f, k) => this.tone(t + k * 0.08, 0.35, { type: 'square', f, g: 0.07 })); }
   explode() { if (!this.ctx) return; const t = this.ctx.currentTime; this.noise(t, 1.4, { type: 'lowpass', f: 900, f2: 40, g: 1 }); this.tone(t, 1, { f: 70, f2: 25, g: 0.6 }); }
 }

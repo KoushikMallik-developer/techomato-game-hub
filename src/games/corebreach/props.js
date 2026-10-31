@@ -194,3 +194,32 @@ export function balconyParts() {
   for (let k = 0; k < 4; k++) { const t = new THREE.TorusGeometry(0.07, 0.007, 4, 16); t.translate(-0.45 + k * 0.3, 0.34, 0.56); iron.push(t); }
   return { slab: mergeAll(slab.map((g) => worldUV(g, 1))), iron: mergeAll(iron.map((g) => worldUV(g, 1))) };
 }
+
+// ── shop awning over a door (front +z, back edge on the wall at z 0): a sloping striped canopy on two brackets ──
+export function awningParts() {
+  const cloth = []; const iron = [];
+  const w = 1.9; const d = 0.95;
+  const c = new THREE.PlaneGeometry(w, d, 1, 1);
+  // slopes down toward the street: back edge high on the wall, front edge lower
+  c.rotateX(-Math.PI / 2 + 0.52);
+  c.translate(0, -0.2, d * 0.45);
+  cloth.push(c);
+  // the scalloped front valance
+  const v = new THREE.PlaneGeometry(w, 0.2, 1, 1); v.translate(0, -0.52, d * 0.86); cloth.push(v);
+  [-1, 1].forEach((sd) => {
+    const a = bx(0.03, 0.03, 0.95, sd * (w / 2 - 0.05), -0.32, 0.45); a.rotateX(0.52 - 0.0); iron.push(a);
+  });
+  const uvs = (g, rep) => { const p = g.attributes.uv; for (let i = 0; i < p.count; i++) p.setXY(i, p.getX(i) * rep, p.getY(i)); return g; };
+  return { cloth: mergeAll(cloth.map((g) => uvs(g, 1))), iron: mergeAll(iron.map((g) => worldUV(g, 1))) };
+}
+
+// ── terracotta planter with a bush and flowers (centred at the origin, base at y 0) ──
+export function planterParts() {
+  const pot = []; const leaf = []; const flowerA = []; const flowerB = [];
+  const p = new THREE.CylinderGeometry(0.26, 0.19, 0.42, 14); p.translate(0, 0.21, 0); pot.push(p);
+  const rim = new THREE.TorusGeometry(0.26, 0.03, 6, 18); rim.rotateX(Math.PI / 2); rim.translate(0, 0.42, 0); pot.push(rim);
+  [[0, 0.62, 0, 0.3], [0.17, 0.55, 0.08, 0.2], [-0.16, 0.56, -0.07, 0.21], [0.02, 0.5, -0.17, 0.17], [-0.05, 0.52, 0.17, 0.18]].forEach(([x, y, z, r]) => { const b = new THREE.IcosahedronGeometry(r, 1); b.translate(x, y, z); leaf.push(b); });
+  [[0.1, 0.86, 0.1], [-0.15, 0.8, 0.05], [0.05, 0.9, -0.12], [0.22, 0.72, -0.04], [-0.06, 0.76, 0.22]].forEach(([x, y, z], k) => { const f = new THREE.IcosahedronGeometry(0.07, 0); f.translate(x, y, z); (k % 2 ? flowerA : flowerB).push(f); });
+  const f = (l) => mergeAll(l.map((g) => worldUV(g, 1)));
+  return { pot: f(pot), leaf: f(leaf), flowerA: f(flowerA), flowerB: f(flowerB) };
+}

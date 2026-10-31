@@ -17,12 +17,14 @@ const GradeShader = {
     vignette: { value: 0.32 },
     tilt: { value: 0 },
     focus: { value: 0.52 },
+    hit: { value: 0 },
+    cold: { value: 0 },
     res: { value: new THREE.Vector2(1, 1) },
   },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
   fragmentShader: `
     uniform sampler2D tDiffuse; uniform float vibrance; uniform float contrast; uniform float warmth; uniform float vignette;
-    uniform float tilt; uniform float focus; uniform vec2 res; varying vec2 vUv;
+    uniform float tilt; uniform float focus; uniform vec2 res; uniform float hit; uniform float cold; varying vec2 vUv;
     void main(){
       vec4 c = texture2D(tDiffuse, vUv);
       if (tilt > 0.0) {
@@ -41,6 +43,13 @@ const GradeShader = {
           c = acc;
         }
       }
+      // impact: a short chromatic split and flash on big hits
+      if (hit > 0.0) {
+        vec2 off = (vUv - 0.5) * hit * 0.014;
+        c.r = texture2D(tDiffuse, vUv + off).r;
+        c.b = texture2D(tDiffuse, vUv - off).b;
+        c.rgb += hit * 0.1;
+      }
       // linear HDR in, still linear out (OutputPass tone maps)
       float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
       float mx = max(c.r, max(c.g, c.b)); float mn = min(c.r, min(c.g, c.b));
@@ -48,6 +57,7 @@ const GradeShader = {
       c.rgb = mix(vec3(l), c.rgb, 1.0 + vibrance * (1.0 - sat));
       c.rgb = (c.rgb - 0.18) * contrast + 0.18;
       c.rgb *= vec3(1.0 + warmth, 1.0, 1.0 - warmth);
+      c.rgb = mix(c.rgb, c.rgb * vec3(0.8, 0.98, 1.3) + vec3(0.0, 0.01, 0.03), cold * 0.6);
       vec2 q = vUv - 0.5;
       c.rgb *= 1.0 - vignette * smoothstep(0.25, 0.85, dot(q, q) * 2.2);
       gl_FragColor = vec4(max(c.rgb, 0.0), c.a);
@@ -85,6 +95,8 @@ export class Post {
 
   // portrait screens show more lane: keep the tilt-shift band a bit taller
   setFocus(portrait) { this.grade.uniforms.focus.value = portrait ? 0.48 : 0.52; }
+
+  setFx(hit, cold) { this.grade.uniforms.hit.value = hit; this.grade.uniforms.cold.value = cold; }
 
   draw() { this.composer.render(); }
 

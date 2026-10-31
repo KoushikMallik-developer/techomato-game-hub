@@ -188,9 +188,9 @@ export class Game {
     sun.shadow.normalBias = 0.035;
     this.sun = sun;
     this.applyShadowQuality();
-    this.hemi = new THREE.HemisphereLight(0xcfe0f5, 0xa48c6c, 0.45);
+    this.hemi = new THREE.HemisphereLight(0xffe9d0, 0xe0b887, 0.62);
     scene.add(this.hemi);
-    scene.fog = new THREE.Fog(0xa9c3dc, 170, 700);
+    scene.fog = new THREE.Fog(0xf2dcc0, 190, 720);
     // the first-person weapon renders in its own pass so it never clips into walls
     this.vmScene = new THREE.Scene();
     this.vmCam = new THREE.PerspectiveCamera(54, 16 / 9, 0.01, 10);
@@ -204,7 +204,7 @@ export class Game {
 
   // per-map light: sun height/direction/colour, sky haze, exposure, fog (null = default sunny noon)
   applyLighting(l) {
-    const L = { elev: 38, az: 218, color: '#fff0da', sun: 4.2, hemi: [0xcfe0f5, 0xa48c6c, 0.45], turbidity: 2.6, rayleigh: 1.7, mie: 0.004, exposure: 0.68, fog: 0xa9c3dc, skyGain: 0.55, ...(l || {}) };
+    const L = { elev: 34, az: 218, color: '#ffe3b3', sun: 4.6, hemi: [0xffe9d0, 0xe0b887, 0.62], turbidity: 3.4, rayleigh: 1.25, mie: 0.006, exposure: 0.92, fog: 0xf2dcc0, skyGain: 0.62, ...(l || {}) };
     const dir = new THREE.Vector3().setFromSphericalCoords(1, (90 - L.elev) * DEG, L.az * DEG);
     [[this.sky, L.skyGain], [this.envSky, L.skyGain * 1.35]].forEach(([sk, gain]) => {
       const u = sk.material.uniforms;
@@ -219,7 +219,7 @@ export class Game {
     this.vmLight.color.set(L.color);
     this.renderer.toneMappingExposure = L.exposure;
     this.scene.fog.color.setHex(L.fog);
-    this.envGround.material.color.setHex(L.elev < 20 ? 0x5a4436 : 0x6f604c);
+    this.envGround.material.color.setHex(L.elev < 20 ? 0x7a5a44 : 0xb89a72);
     if (this.envRT) this.envRT.dispose();
     this.envRT = this.pmrem.fromScene(this.envScene, 0.02);
     this.scene.environment = this.envRT.texture;

@@ -178,8 +178,9 @@ export function buildFortress(level) {
   mesh(new THREE.BoxGeometry(W + 0.6, 0.35, 4.6), trim, g, 0, 6.05, -2);
   // crenellations front and back
   for (let k = -4; k <= 4; k++) {
-    mesh(new THREE.BoxGeometry(1.05, 0.9, 0.7), stone, g, k * 1.95, 6.65, -0.25);
-    mesh(new THREE.BoxGeometry(1.05, 0.9, 0.7), stone, g, k * 1.95, 6.65, -3.75);
+    // crenellations are tagged so they can break off as the fortress takes damage
+    mesh(new THREE.BoxGeometry(1.05, 0.9, 0.7), stone, g, k * 1.95, 6.65, -0.25).userData.chunk = 1;
+    mesh(new THREE.BoxGeometry(1.05, 0.9, 0.7), stone, g, k * 1.95, 6.65, -3.75).userData.chunk = 2;
   }
   // buttresses
   [-1, 1].forEach((s) => [2.9, 5.6].forEach((x) => mesh(new THREE.BoxGeometry(0.8, 4.4, 1.0), trim, g, s * x, 2.6, 0.3)));
@@ -200,9 +201,10 @@ export function buildFortress(level) {
     const x = s * (HALF + 2.4);
     mesh(new THREE.CylinderGeometry(2.0, 2.4, 9.5, 16), stoneV, g, x, 4.75, -1.6);
     mesh(new THREE.CylinderGeometry(2.45, 2.45, 0.5, 16), trim, g, x, 9.6, -1.6);
-    for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), stoneV, g, x + Math.cos(a) * 2.2, 10.2, -1.6 + Math.sin(a) * 2.2).rotation.y = -a; }
+    for (let k = 0; k < 8; k++) { const a = (k / 8) * Math.PI * 2; const b = mesh(new THREE.BoxGeometry(0.8, 0.8, 0.6), stoneV, g, x + Math.cos(a) * 2.2, 10.2, -1.6 + Math.sin(a) * 2.2); b.rotation.y = -a; b.userData.chunk = 2; }
     const roof = mesh(new THREE.ConeGeometry(2.3, 3.6, 16), accent, g, x, 12.1, -1.6);
     roof.castShadow = true;
+    roof.userData.roof = s;
     mesh(new THREE.TorusGeometry(2.05, 0.12, 8, 24), dark, g, x, 10.45, -1.6).rotation.x = Math.PI / 2;
     // arrow-slit windows glowing from inside
     [3.4, 6.4].forEach((y) => mesh(new THREE.BoxGeometry(0.3, 0.9, 0.1), holeMat, g, x - s * 0.2, y, 0.62, false));
@@ -226,7 +228,7 @@ export function buildFortress(level) {
   const sign = mesh(new THREE.PlaneGeometry(5.6, 1.75), new THREE.MeshBasicMaterial({ map: label.texture, transparent: true, depthWrite: false }), g, 0, 8.42, 0.36, false);
   sign.renderOrder = 5;
   g.position.z = -level.L;
-  return { group: g, label, flags: g.children.filter((c) => c.userData.flag), torches: g.children.filter((c) => c.userData.torch) };
+  return { group: g, label, flags: g.children.filter((c) => c.userData.flag), torches: g.children.filter((c) => c.userData.torch), chunks: g.children.filter((c) => c.userData.chunk), roofs: g.children.filter((c) => c.userData.roof) };
 }
 
 // ───────────── the cannon ─────────────
@@ -272,8 +274,11 @@ export function buildCannon(color) {
   // energy ring around the muzzle (glows when the champion is ready)
   const ring = mesh(new THREE.TorusGeometry(0.78, 0.06, 8, 32), new THREE.MeshBasicMaterial({ color: '#ffe066', transparent: true, opacity: 0 }), barrel, 0, 0.38, -2.05, false);
   ring.rotation.x = -0.25;
+  // muzzle flash, kicked to full on every shot and faded by the game
+  const flash = mesh(new THREE.SphereGeometry(0.55, 14, 10), new THREE.MeshBasicMaterial({ color: '#fff1a8', transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending }), barrel, 0, 0.42, -2.35, false);
+  flash.scale.set(1, 1, 1.8);
   g.position.set(0, 0, CANNON_Z + 1.5);
-  return { group: g, barrel, body, ring };
+  return { group: g, barrel, body, ring, flash, wheels: [g.userData.wl, g.userData.wr] };
 }
 
 // ───────────── gates ─────────────
@@ -329,6 +334,23 @@ export function buildGate(gt) {
   lm.renderOrder = 3;
   g.position.set(gt.x, 0, gt.z);
   return { group: g, panel, panelMat, label, labelMesh: lm };
+}
+
+// ───────────── power-up orbs ─────────────
+export function buildPickup(p, def) {
+  const g = new THREE.Group();
+  const orb = mesh(new THREE.IcosahedronGeometry(0.5, 1), std({ color: def.color, emissive: def.color, emissiveIntensity: 0.9, roughness: 0.2, metalness: 0.3, flatShading: true }), g, 0, 1.3, 0);
+  const shell = mesh(new THREE.SphereGeometry(0.78, 20, 14), new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.2, depthWrite: false }), g, 0, 1.3, 0, false);
+  const ring = mesh(new THREE.RingGeometry(0.75, 1, 36), new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.6, depthWrite: false }), g, 0, 0.05, 0, false);
+  ring.rotation.x = -Math.PI / 2;
+  const label = makeLabel(def.name, { w: 256, h: 72, color: '#ffffff' });
+  const tag = new THREE.Sprite(new THREE.SpriteMaterial({ map: label.texture, depthWrite: false }));
+  tag.scale.set(2.1, 0.6, 1);
+  tag.position.y = 2.45;
+  tag.renderOrder = 3;
+  g.add(tag);
+  g.position.set(p.x, 0, p.z);
+  return { group: g, orb, shell, ring };
 }
 
 // ───────────── bonus crates and HP barriers ─────────────
@@ -401,10 +423,11 @@ export function buildHazard(h) {
 }
 
 // ───────────── big creatures: boss and champions ─────────────
-export function buildBrute(theme, scale, champion = null) {
+// deco (world bosses): { skin, crown, glow } override the skin colour, add a crown and make the skin glow
+export function buildBrute(theme, scale, champion = null, deco = null) {
   const g = new THREE.Group();
-  const skinCol = champion ? champion.color : theme.neon ? '#ff4f7a' : '#ffcf3a';
-  const skin = std({ color: skinCol, roughness: 0.5 });
+  const skinCol = champion ? champion.color : deco?.skin || (theme.neon ? '#ff4f7a' : '#ffcf3a');
+  const skin = std({ color: skinCol, roughness: 0.5, emissive: deco?.glow ? skinCol : '#000000', emissiveIntensity: deco?.glow ? 0.45 : 0 });
   const skinDk = std({ color: new THREE.Color(skinCol).offsetHSL(0, 0.05, -0.12), roughness: 0.55 });
   const cloth = std({ color: champion ? '#e8ecf4' : '#a8322a', roughness: 0.75 });
   const leather = std({ color: champion ? '#5a6478' : '#4a2e1e', roughness: 0.65 });
@@ -447,6 +470,13 @@ export function buildBrute(theme, scale, champion = null) {
       horn.computeVertexNormals();
       mesh(horn, white, headG, 0, 0, 0);
     });
+    if (deco?.crown) { // a spiked crown between the horns
+      const cm = std({ color: deco.crown, roughness: 0.25, metalness: 0.8, emissive: deco.glow ? deco.crown : '#000000', emissiveIntensity: deco.glow ? 0.8 : 0 });
+      const band = mesh(new THREE.CylinderGeometry(0.4, 0.36, 0.2, 18, 1, true), Object.assign(cm, { side: THREE.DoubleSide }), headG, 0, 0.42, 0);
+      void band;
+      for (let k = 0; k < 7; k++) { const a = (k / 7) * Math.PI * 2; mesh(new THREE.ConeGeometry(0.07, 0.24, 6), cm, headG, Math.cos(a) * 0.38, 0.62, Math.sin(a) * 0.38); }
+      mesh(new THREE.OctahedronGeometry(0.09, 0), std({ color: '#ff3b6b', emissive: '#ff3b6b', emissiveIntensity: 0.9 }), headG, 0, 0.45, -0.4);
+    }
   } else {
     // knight helmet with a visor slit and a plume
     const helm = mesh(new THREE.SphereGeometry(0.55, 24, 16, 0, Math.PI * 2, 0, Math.PI * 0.62), metal, headG, 0, 0.02, 0.0);
@@ -495,16 +525,21 @@ export function buildBrute(theme, scale, champion = null) {
     return l;
   });
   g.scale.setScalar(scale);
-  // HP bar above the head
+  const { bar, barFg, label } = hpBar(!!champion);
+  bar.position.y = 3.1;
+  g.add(bar);
+  return { group: g, body, arms, legs, bar, barFg, label };
+}
+
+// HP bar with a number, drawn over everything and turned to face the camera by the game
+export function hpBar(friendly) {
   const label = makeLabel('', { w: 256, h: 64, size: 0.9 });
   const barBg = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.3), new THREE.MeshBasicMaterial({ color: '#2a0d12', depthTest: false }));
-  const barFg = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.3), new THREE.MeshBasicMaterial({ color: champion ? '#3edb7a' : '#ff3b4a', depthTest: false }));
+  const barFg = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 0.3), new THREE.MeshBasicMaterial({ color: friendly ? '#3edb7a' : '#ff3b4a', depthTest: false }));
   const txt = new THREE.Mesh(new THREE.PlaneGeometry(1.6, 0.42), new THREE.MeshBasicMaterial({ map: label.texture, transparent: true, depthTest: false }));
   const bar = new THREE.Group();
   bar.add(barBg, barFg, txt);
   txt.position.y = 0.32;
   barBg.renderOrder = 10; barFg.renderOrder = 11; txt.renderOrder = 12;
-  bar.position.y = 3.1;
-  g.add(bar);
-  return { group: g, body, arms, legs, bar, barFg, label };
+  return { bar, barFg, label };
 }

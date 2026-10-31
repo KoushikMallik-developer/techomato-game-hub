@@ -1,0 +1,44 @@
+Horde Surge 3D models
+---------------------
+The scenery, creature and prop models are by Quaternius (https://quaternius.com) and are released into the
+public domain under CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/).
+Credit is not required; it is given here with thanks.
+
+Downloaded as single .glb files from https://github.com/trebeljahr/quaternius-showcase
+(models unchanged; the game recolours some materials at runtime).
+
+Pack                              Files
+Animated Dinosaur Pack            Trex
+Ultimate Animated Animal Pack     Wolf, Bull, ShibaInu, Husky, Fox
+Easy Enemy Pack                   Spider, Frog
+Animated Mech Pack                Leela
+Animated Knight Pack              KnightCharacter
+Ultimate Nature Pack              CommonTree_1-3, CommonTree_Snow_4, PineTree_Snow_1, PineTree_Snow_3,
+                                  PalmTree_1-2, Cactus_1, Cactus_3, Cactus_4, CactusFlowers_2, Bush_1,
+                                  Bush_Snow_1, Rock_3, Rock_Moss_1, Rock_Moss_4, Rock_Snow_2, Flowers
+Ultimate RPG Pack                 Chest_Closed, Chest_Open, Coin, Crown
+Medieval Village Pack             Barrel, Crate, Cart, Bonfire_Lit
+
+Weapons (the Arsenal), downloaded as .glb from Poly Pizza (https://poly.pizza), models unchanged:
+File                          Model (author)                       Licence     Source
+arsenal/FieldCannon           Cannon (Quaternius)                  CC0 1.0     https://poly.pizza/m/qIAvoaawib
+arsenal/FortressCannon        Cannon (Quaternius)                  CC0 1.0     https://poly.pizza/m/J15vlPVvKK
+arsenal/Artillery             artileria (Andreev Evgeny)           CC-BY 3.0   https://poly.pizza/m/1VfiCTmbc8_
+arsenal/GatlingTurret         Gatelng Gun Turret (Zsky)            CC-BY 3.0   https://poly.pizza/m/T8ofhRSenf
+arsenal/BattleTank            Tank (Zsky)                          CC-BY 3.0   https://poly.pizza/m/7GG1xDtc8l
+arsenal/AssaultTank           Tank (KolosStudios)                  CC-BY 3.0   https://poly.pizza/m/egcLMSGiuA
+arsenal/HeavyTank             Tank (Poly by Google)                CC-BY 3.0   https://poly.pizza/m/4t0RMXCl_Ud
+arsenal/Fighter               Aeroplane (Gilang Romadhan)          CC-BY 3.0   https://poly.pizza/m/9VeIc0cybp4
+arsenal/StrikerJet            Jet (jeremy)                         CC-BY 3.0   https://poly.pizza/m/6fyLMORhgGK
+arsenal/StealthJet            Low poly Fighter (Stephen Graybill)  CC-BY 3.0   https://poly.pizza/m/1fi8ZIDdFCP
+CC-BY 3.0: https://creativecommons.org/licenses/by/3.0/ (credit is required and given here).
+
+Skins (your crowd's characters), downloaded as .glb from Poly Pizza (https://poly.pizza), models unchanged
+(the game bakes their colours into the crowd mesh):
+File                 Model (author)                       Licence     Source
+skins/Slime          Slime (Quaternius)                   CC0 1.0     https://poly.pizza/m/LyjSUKHKnh
+skins/Duck           Duckling (Poly by Google)            CC-BY 3.0   https://poly.pizza/m/cGH2xtNdS4i
+skins/Ninja          Ninja (Quaternius)                   CC0 1.0     https://poly.pizza/m/mCNoqcqpvC
+skins/Chick          Chick (Poly by Google)               CC-BY 3.0   https://poly.pizza/m/7-uNQC5megf
+skins/Penguin        Penguin (Poly by Google)             CC-BY 3.0   https://poly.pizza/m/fBXvsC6pe_V
+skins/Buddy          Cute Character (antoine1germ)        CC-BY 3.0   https://poly.pizza/m/7MjOlLk4DR

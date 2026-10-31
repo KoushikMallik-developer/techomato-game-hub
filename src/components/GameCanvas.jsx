@@ -95,7 +95,7 @@ export default function GameCanvas({ game, locked = false, gate = null }) {
         </div>
       </div>
       <div className="t-stage-bar" style={{ width: maxW }}>
-        {narrow && !game.portrait ? <p className="t-small t-muted">Turn your phone sideways or go full screen for the best view.</p> : <p className="t-small t-muted">Click the game to start. Progress saves on this device.</p>}
+        {narrow && !game.portrait ? <p className="t-small t-muted">Turn your phone sideways or go full screen for the best view.</p> : <p className="t-small t-muted">Click the game to start. Progress is saved to your account.</p>}
         {canFullscreen && (
           <button className="t-btn t-btn-ghost t-btn-sm" onClick={toggleFullscreen}>
             <Icon name={full ? 'shrink' : 'expand'} size={16} />

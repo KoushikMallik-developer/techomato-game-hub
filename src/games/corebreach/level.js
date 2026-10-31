@@ -99,7 +99,7 @@ const MERIDIAN = {
 const HARBOR = {
   name: 'Harbor',
   size: [-62, -70, 62, 70],
-  light: { elev: 11, az: 252, color: '#ff9d62', sun: 3.6, hemi: [0xffb08a, 0x40343c, 0.55], turbidity: 8, rayleigh: 3.2, mie: 0.01, exposure: 0.64, fog: 0xd49a7c, skyGain: 0.62 },
+  light: { elev: 14, az: 252, color: '#ffa86a', sun: 4.0, hemi: [0xffc29c, 0x7a5a50, 0.7], turbidity: 7, rayleigh: 2.6, mie: 0.01, exposure: 0.86, fog: 0xe8b08a, skyGain: 0.68 },
   // big things beyond the walls: dock cranes, a moored ship, container stacks
   dressing: {
     cranes: [[-92, -30, 0], [-92, 18, 0], [-20, -102, Math.PI / 2], [30, -104, Math.PI / 2]],

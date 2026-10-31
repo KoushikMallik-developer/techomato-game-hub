@@ -13,6 +13,7 @@ export const ACHIEVEMENTS = [
   { id: 'cb-10', name: 'Veteran agent', desc: 'Reach level 10 in Core Breach', icon: 'key', test: (s) => g(s, 'core-breach', 'level') >= 10 },
   { id: 'hs-10', name: 'Crowd pleaser', desc: 'Reach level 10 in Horde Surge', icon: 'users', test: (s) => g(s, 'horde-surge', 'level') >= 10 },
   { id: 'hs-25', name: 'Horde master', desc: 'Reach level 25 in Horde Surge', icon: 'users', test: (s) => g(s, 'horde-surge', 'level') >= 25 },
+  { id: 'hs-endless', name: 'Unbreakable', desc: 'Reach wave 20 in Horde Surge endless mode', icon: 'users', test: (s) => g(s, 'horde-surge', 'endless') >= 20 },
   { id: 'hs-stars', name: 'Star collector', desc: 'Earn 100 stars in Horde Surge', icon: 'users', test: (s) => g(s, 'horde-surge', 'stars') >= 100 },
   { id: 'mp-racer', name: 'First win', desc: 'Win a race in Midnight Pursuit', icon: 'globe', test: (s) => g(s, 'midnight-pursuit', 'races') >= 1 },
   { id: 'mp-champ', name: 'Street champion', desc: 'Win 25 races in Midnight Pursuit', icon: 'globe', test: (s) => g(s, 'midnight-pursuit', 'races') >= 25 },
