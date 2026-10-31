@@ -44,8 +44,9 @@ export const ACCOUNT_GAMES = {
       { id: 'level', label: 'Highest level', get: (s) => Math.max(1, n(s.level)) },
       { id: 'stars', label: 'Stars earned', get: (s) => sum(s.stars) },
       { id: 'kills', label: 'Units that fell in battle', get: (s) => n(s.stats?.kills) },
+      { id: 'endless', label: 'Endless: best wave', get: (s) => n(s.endless?.best) },
     ],
-    summary: (s) => ({ level: Math.max(1, n(s.level)), stars: sum(s.stars), wins: n(s.stats?.wins), bosses: n(s.stats?.bosses) }),
+    summary: (s) => ({ level: Math.max(1, n(s.level)), stars: sum(s.stars), wins: n(s.stats?.wins), bosses: n(s.stats?.bosses), endless: n(s.endless?.best) }),
   },
   'midnight-pursuit': {
     title: 'Midnight Pursuit',

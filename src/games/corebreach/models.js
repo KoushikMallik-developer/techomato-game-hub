@@ -95,19 +95,19 @@ export function buildAgent(agentId, team, opts = {}) {
   const mats = {
     suit: F(ag.suit || '#2a2e38'),
     suit2: F(ag.suit2 || '#3a3f4c'),
-    accent: M(ag.color, { roughness: 0.42, metalness: 0.15 }),
-    accent2: M(ag.accent, { roughness: 0.45, metalness: 0.2 }),
+    accent: M(ag.color, { roughness: 0.3, metalness: 0.25, emissive: ag.color, emissiveIntensity: 0.22 }),
+    accent2: M(ag.accent, { roughness: 0.32, metalness: 0.3, emissive: ag.accent, emissiveIntensity: 0.2 }),
     skin: rimify(new THREE.MeshPhysicalMaterial({ color: skinTone, roughness: 0.55, sheen: 0.6, sheenRoughness: 0.45, sheenColor: new THREE.Color('#ff9a7a'), normalMap: B.skinNormal(), normalScale: new THREE.Vector2(0.15, 0.15) }), rim),
     dark: M('#17181c', { roughness: 0.55, metalness: 0.2 }),
     glove: M('#1d1e22', { roughness: 0.7, normalMap: cloth, normalScale: new THREE.Vector2(0.4, 0.4) }),
     gear: W('#3b3a33'),
     sole: M('#0c0c0e', { roughness: 0.9 }),
     eye: new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.12 }),
-    glow: new THREE.MeshStandardMaterial({ color: '#000000', emissive: ag.accent, emissiveIntensity: 2.4 }),
+    glow: new THREE.MeshStandardMaterial({ color: '#000000', emissive: ag.accent, emissiveIntensity: 3.2 }),
     hair: M(['#1c1612', '#d9d2c4', '#3a2516', '#7a2a2a'][agentId.length % 4], { roughness: 0.85 }),
     metal: M('#5c6068', { roughness: 0.35, metalness: 0.8 }),
     // armour plates: team colour knocked back toward a tactical grey so the kit reads as real gear
-    plate: M(new THREE.Color(ag.color).lerp(new THREE.Color('#2f312d'), 0.8), { roughness: 0.6, metalness: 0.1, normalMap: B.webbingNormal(), normalScale: new THREE.Vector2(0.25, 0.25) }),
+    plate: M(new THREE.Color(ag.color).lerp(new THREE.Color('#2a2c30'), 0.38), { roughness: 0.38, metalness: 0.3, emissive: ag.color, emissiveIntensity: 0.1, normalMap: B.webbingNormal(), normalScale: new THREE.Vector2(0.2, 0.2) }),
   };
   const root = new THREE.Group();
   const hips = new THREE.Group();
@@ -493,8 +493,8 @@ function gunMats(id, opts) {
     metal: new THREE.MeshStandardMaterial({ color: '#2a2c31', roughness: 0.42, metalness: 0.85, normalMap: gunTex('metal'), normalScale: new THREE.Vector2(0.35, 0.35) }),
     steel: new THREE.MeshStandardMaterial({ color: '#7a7f88', roughness: 0.28, metalness: 0.95, normalMap: gunTex('metal'), normalScale: new THREE.Vector2(0.25, 0.25) }),
     poly: new THREE.MeshStandardMaterial({ color: '#2c2f34', roughness: 0.82, metalness: 0.02, normalMap: gunTex('poly'), normalScale: new THREE.Vector2(0.22, 0.22) }),
-    skin: new THREE.MeshPhysicalMaterial({ color: opts.color || GUN_COLORS[w.id] || '#c9cbd1', roughness: 0.5, metalness: 0.2, clearcoat: 0.35, clearcoatRoughness: 0.4, normalMap: gunTex('poly'), normalScale: new THREE.Vector2(0.06, 0.06) }),
-    glow: new THREE.MeshStandardMaterial({ color: '#000', emissive: opts.glow || '#5ef2ff', emissiveIntensity: 2.4 }),
+    skin: new THREE.MeshPhysicalMaterial({ color: opts.color || GUN_COLORS[w.id] || '#c9cbd1', roughness: 0.38, metalness: 0.3, clearcoat: 0.9, clearcoatRoughness: 0.18, normalMap: gunTex('poly'), normalScale: new THREE.Vector2(0.06, 0.06) }),
+    glow: new THREE.MeshStandardMaterial({ color: '#000', emissive: opts.glow || '#5ef2ff', emissiveIntensity: 3.4 }),
     glass: new THREE.MeshStandardMaterial({ color: '#3a6a7a', roughness: 0.05, metalness: 0.9, transparent: true, opacity: 0.35 }),
     dot: new THREE.MeshBasicMaterial({ color: '#ff3040' }),
     dark: new THREE.MeshStandardMaterial({ color: '#0d0e10', roughness: 0.6, metalness: 0.5 }),

@@ -211,6 +211,68 @@ export function tiles(seed = 3, cols = ['#b9a58a', '#c7b497', '#ad9a80']) {
   return { map: tex(c), normalMap: tex(normalFrom(hc, 1.4), false) };
 }
 
+// loose desert sand: soft wind ripples, fine grains, darker damp patches and a few small pebbles (no paving at all)
+export function sandFloor(seed = 31, cols = ['#e8d3a6', '#e0c896', '#ecd9b0']) {
+  const S = 512;
+  const rnd = mulberry32(seed);
+  const pal = cols.map((h) => new THREE.Color(h).convertLinearToSRGB());
+  const warp = fbmField(S, seed * 5 + 1, 4, 6);
+  const patch = fbmField(S, seed * 5 + 2, 4, 3);
+  const grain = fbmField(S, seed * 5 + 3, 2, 64);
+  const fine = fbmField(S, seed * 5 + 4, 2, 128);
+  const { c, hc, g, hg } = paint(S, (x, y, i, col) => {
+    // ripples run diagonally and wobble with the noise, so no two look alike
+    const ph = (x * 0.55 + y * 0.83) * 0.16 + warp[i] * 7.5;
+    const rip = Math.sin(ph) * 0.5 + 0.5;
+    const crest = Math.pow(rip, 1.6);
+    const t = patch[i];
+    const p = pal[t < 0.4 ? 0 : t < 0.7 ? 1 : 2];
+    const damp = Math.max(0, 0.38 - patch[i]) * 0.7;
+    const k = (0.9 + crest * 0.14) * (1 + (grain[i] - 0.5) * 0.12 + (fine[i] - 0.5) * 0.1) * (1 - damp * 0.35);
+    col[0] = p.r * 255 * k; col[1] = p.g * 255 * k * (1 - damp * 0.04); col[2] = p.b * 255 * k * (1 - damp * 0.12);
+    return 0.45 + crest * 0.3 + (fine[i] - 0.5) * 0.12;
+  });
+  for (let n = 0; n < 150; n++) {
+    const x = rnd() * S; const y = rnd() * S; const r = 1 + rnd() * 2.6; const v = 0.62 + rnd() * 0.3;
+    g.fillStyle = `rgb(${(214 * v) | 0},${(190 * v) | 0},${(150 * v) | 0})`; g.beginPath(); g.ellipse(x, y, r, r * 0.8, rnd() * 3, 0, 7); g.fill();
+    hg.fillStyle = '#d8d8d8'; hg.beginPath(); hg.ellipse(x, y, r, r * 0.8, 0, 0, 7); hg.fill();
+  }
+  return { map: tex(c), normalMap: tex(normalFrom(hc, 2.6), false) };
+}
+
+// sandstone flagstones: big staggered slabs in sunny sand tones, fine grain, soft bedding lines and thin joints
+export function sandstone(seed = 21, cols = ['#ecd5a6', '#e3c995', '#f0dcb2', '#dfc08a']) {
+  const S = 512;
+  const rnd = mulberry32(seed);
+  const pal = cols.map((h) => new THREE.Color(h).convertLinearToSRGB()); // the canvas holds sRGB values
+  const hi = fbmField(S, seed * 5 + 1, 4, 24);
+  const mid = fbmField(S, seed * 5 + 2, 4, 8);
+  const low = fbmField(S, seed * 5 + 3, 3, 3);
+  // 2 rows of slabs per tile, staggered; each slab gets its own colour and bedding
+  const rows = 4; const rh = S / rows;
+  const slabs = [];
+  for (let r = 0; r < rows; r++) {
+    let x = r % 2 ? -S / 4 : 0;
+    while (x < S) { const w = S / 2 + (rnd() - 0.5) * 70; slabs.push({ r, x0: x, x1: x + w, p: pal[Math.floor(rnd() * pal.length)], v: 0.93 + rnd() * 0.14, tilt: (rnd() - 0.5) * 0.08 }); x += w; }
+  }
+  const rowSlabs = Array.from({ length: rows }, (_, r) => slabs.filter((s) => s.r === r));
+  const { c, hc } = paint(S, (x, y, i, col) => {
+    const r = Math.min(rows - 1, Math.floor(y / rh));
+    const ly = y - r * rh;
+    const xs = ((x % S) + S) % S;
+    const s = rowSlabs[r].find((q) => (xs >= q.x0 && xs < q.x1) || (xs + S >= q.x0 && xs + S < q.x1) || (xs - S >= q.x0 && xs - S < q.x1)) || rowSlabs[r][0];
+    const lx = Math.min(Math.abs(xs - s.x0), Math.abs(xs - s.x1), Math.abs(xs + S - s.x1), Math.abs(xs - S - s.x0), Math.abs(xs + S - s.x0), Math.abs(xs - S - s.x1));
+    const e = Math.min(lx, ly, rh - ly);
+    if (e < 1.6) { col[0] = 196 + hi[i] * 20; col[1] = 168 + hi[i] * 18; col[2] = 122 + hi[i] * 14; return 0.15; }
+    const bed = 1 + Math.sin((y + hi[i] * 6) * 0.35) * 0.012 + (mid[i] - 0.5) * 0.1 + (low[i] - 0.5) * 0.08 + (hi[i] - 0.5) * 0.06 + s.tilt * (ly / rh - 0.5);
+    const wear = Math.min(1, e / 8);
+    const k = s.v * bed * (0.93 + 0.07 * wear);
+    col[0] = s.p.r * 255 * k; col[1] = s.p.g * 255 * k; col[2] = s.p.b * 255 * k;
+    return 0.55 + 0.3 * wear + (hi[i] - 0.5) * 0.2;
+  });
+  return { map: tex(c), normalMap: tex(normalFrom(hc, 2.2), false) };
+}
+
 // cobbled plaza: rounded irregular stones (tileable Voronoi) with dark joints
 export function slabs(seed = 4, cols = ['#c4b59b', '#b6a68c', '#cdbfa6', '#a9987f']) {
   const S = 512;

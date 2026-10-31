@@ -24,6 +24,7 @@ export function mount(container, opts = {}) {
     try {
       game = new Game(container, opts);
       destroy.game = game;
+      container.__game = game; // handy for automated play-testing
     } catch (e) {
       console.error(e);
       loader.querySelector('small').textContent = 'COULD NOT START THE GAME';

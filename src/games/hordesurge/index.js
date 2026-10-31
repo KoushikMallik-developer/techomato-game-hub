@@ -1,5 +1,16 @@
 // Horde Surge entry point. GameHub calls mount(container) and keeps the returned cleanup function.
 import { Game } from './game.js';
+import { loadAll } from './assets.js';
+import { loadSave, PETS, SKINS } from './data.js';
+import { WEAPONS } from './weapons.js';
+
+// models the first screen needs (bosses load when their level does); see public/models/hordesurge
+const PRELOAD = [
+  'CommonTree_1', 'CommonTree_2', 'CommonTree_3', 'Bush_1', 'Flowers', 'Rock_Moss_1', 'Rock_Moss_4',
+  'PineTree_Snow_1', 'PineTree_Snow_3', 'CommonTree_Snow_4', 'Bush_Snow_1', 'Rock_Snow_2',
+  'PalmTree_1', 'PalmTree_2', 'Cactus_1', 'Cactus_3', 'Cactus_4', 'CactusFlowers_2',
+  'Barrel', 'Crate', 'Cart', 'Bonfire_Lit', 'Coin', 'Chest_Closed', 'Chest_Open', 'Crown', 'Bull', 'KnightCharacter',
+];
 
 export const engine = 'three';
 
@@ -18,7 +29,18 @@ export function mount(container, opts = {}) {
   container.appendChild(loader);
   let game = null;
   let destroyed = false;
-  const timer = setTimeout(() => {
+  const label = loader.querySelector('b');
+  const save = loadSave();
+  const pet = PETS.find((p) => p.id === save.pet);
+  const weapon = WEAPONS.find((w) => w.id === save.weapon && w.model);
+  const skin = SKINS.find((k) => k.id === save.skin && k.model);
+  // wait for the models (at most 12 s; anything missing falls back to the procedural look)
+  const models = Promise.race([
+    loadAll([...PRELOAD, ...(pet ? [pet.model] : []), ...(weapon ? [weapon.model] : []), ...(skin ? [skin.model] : [])], (k) => { label.textContent = `LOADING ${Math.round(k * 100)}%`; }),
+    new Promise((r) => setTimeout(r, 12000)),
+  ]);
+  const timer = setTimeout(async () => {
+    await models;
     if (destroyed) return;
     try {
       game = new Game(container, opts);

@@ -1,15 +1,15 @@
 // Core Breach colour grade: a film-like look on top of the tone mapper's input (linear HDR).
-// Cool shadows and warm highlights, a little extra contrast and saturation, and a soft vignette.
+// Soft violet-tinted shadows and warm golden highlights, rich saturation and a light vignette: a bright, playful look.
 import * as THREE from 'three';
 
 export const GradeShader = {
   uniforms: {
     tDiffuse: { value: null },
-    contrast: { value: 1.08 },
-    saturation: { value: 1.06 },
-    shadowTint: { value: new THREE.Vector3(0.97, 1.0, 1.04) },
-    highTint: { value: new THREE.Vector3(1.04, 1.0, 0.95) },
-    vignette: { value: 0.28 },
+    contrast: { value: 1.05 },
+    saturation: { value: 1.26 },
+    shadowTint: { value: new THREE.Vector3(1.0, 0.97, 1.06) },
+    highTint: { value: new THREE.Vector3(1.06, 1.01, 0.93) },
+    vignette: { value: 0.16 },
   },
   vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
   fragmentShader: `

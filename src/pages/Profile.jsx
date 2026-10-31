@@ -8,7 +8,7 @@ import { Avatar, AccountsOff, SignInPrompt } from '../components/Account.jsx';
 import { Link, navigate } from '../router.jsx';
 import { Icon } from '../components/Brand.jsx';
 
-const LABELS = { level: 'Level', matches: 'Matches', wins: 'Wins', kills: 'Kills', rank: 'Rank points', stars: 'Stars', bosses: 'Bosses', races: 'Races won', takedowns: 'Takedowns', cars: 'Cars owned' };
+const LABELS = { level: 'Level', matches: 'Matches', wins: 'Wins', kills: 'Kills', rank: 'Rank points', stars: 'Stars', bosses: 'Bosses', endless: 'Endless best wave', races: 'Races won', takedowns: 'Takedowns', cars: 'Cars owned' };
 const fmt = (n) => Number(n || 0).toLocaleString();
 const since = (ts) => (ts && ts.toDate ? ts.toDate().toLocaleDateString(undefined, { month: 'long', year: 'numeric' }) : '');
 const copy = (t) => { try { navigator.clipboard.writeText(t); } catch { /* clipboard blocked */ } };

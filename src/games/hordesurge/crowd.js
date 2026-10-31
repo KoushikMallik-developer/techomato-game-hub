@@ -65,6 +65,36 @@ function accessoryGeometry(kind) {
   return mergeSimple(parts);
 }
 
+// per-type gear for the horde (vertex coloured, drawn only on units of that type)
+function gearGeometry(kind) {
+  const parts = []; const cols = [];
+  const add = (g, c) => { parts.push(g); cols.push(new THREE.Color(c).toArray()); };
+  if (kind === 'shield') {
+    const sh = new THREE.BoxGeometry(0.5, 0.56, 0.05); sh.translate(0, 0.36, -0.37); add(sh, '#c9d2de');
+    const rim = new THREE.BoxGeometry(0.54, 0.07, 0.07); rim.translate(0, 0.64, -0.37); add(rim, '#8a94a6');
+    const rim2 = rim.clone(); rim2.translate(0, -0.56, 0); add(rim2, '#8a94a6');
+    const boss = new THREE.SphereGeometry(0.08, 10, 8); boss.scale(1, 1, 0.6); boss.translate(0, 0.37, -0.41); add(boss, '#ffcf3a');
+  } else if (kind === 'bomber') {
+    const b = new THREE.SphereGeometry(0.17, 12, 10); b.translate(0, 0.8, 0.08); add(b, '#1a1a20');
+    const f = new THREE.CylinderGeometry(0.02, 0.02, 0.14, 5); f.rotateZ(0.5); f.translate(0.06, 0.98, 0.08); add(f, '#c9a46a');
+    const sp = new THREE.SphereGeometry(0.05, 8, 6); sp.translate(0.1, 1.05, 0.08); add(sp, '#ffdd55');
+  } else if (kind === 'archer') {
+    const hood = new THREE.ConeGeometry(0.3, 0.42, 12); hood.translate(0, 0.78, 0.02); add(hood, '#24452a');
+    const bow = new THREE.TorusGeometry(0.3, 0.025, 6, 16, Math.PI); bow.rotateZ(-Math.PI / 2); bow.rotateY(Math.PI / 2); bow.translate(0.36, 0.4, -0.05); add(bow, '#7a5636');
+    const str = new THREE.CylinderGeometry(0.006, 0.006, 0.6, 3); str.translate(0.36, 0.4, -0.05); add(str, '#eeeeee');
+  } else if (kind === 'flyer') {
+    [-1, 1].forEach((sd) => {
+      const w = new THREE.SphereGeometry(0.3, 10, 6); w.scale(1.4, 0.12, 0.7); w.translate(sd * 0.55, 0.48, 0.05); add(w, '#3a2266');
+      const e = new THREE.ConeGeometry(0.06, 0.18, 6); e.translate(sd * 0.14, 0.74, 0); add(e, '#3a2266');
+    });
+  } else if (kind === 'healer') {
+    const st = new THREE.CylinderGeometry(0.03, 0.03, 0.9, 6); st.translate(0.38, 0.45, -0.05); add(st, '#7a5636');
+    const orb = new THREE.SphereGeometry(0.09, 10, 8); orb.translate(0.38, 0.95, -0.05); add(orb, '#9dffb0');
+    const mask = new THREE.SphereGeometry(0.2, 12, 8, 0, Math.PI * 2, 0, Math.PI * 0.45); mask.translate(0, 0.62, 0); add(mask, '#f4f0dc');
+  } else return null;
+  return mergeSimple(parts, cols);
+}
+
 // merge non-indexed copies of simple geometries (position, normal, optional vertex colour)
 export function mergeSimple(geos, colors = null) {
   const list = geos.map((g) => (g.index ? g.toNonIndexed() : g));
@@ -87,6 +117,14 @@ export function mergeSimple(geos, colors = null) {
 }
 
 const BODY = bodyGeometry();
+// a skin's 3D character (a baked, vertex-coloured geometry) as the unit body: turned to face -z, no limbs
+function unitGeometry(model) {
+  if (!model) return BODY;
+  const g = model.clone();
+  g.rotateY(Math.PI);
+  g.setAttribute('limb', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count), 1));
+  return g;
+}
 const FACE = faceGeometry();
 
 export class Crowd {
@@ -98,12 +136,18 @@ export class Crowd {
     const N = MAX_UNITS;
     this.x = new Float32Array(N); this.z = new Float32Array(N); this.y = new Float32Array(N);
     this.vx = new Float32Array(N); this.vy = new Float32Array(N); this.ph = new Float32Array(N); this.sp = new Float32Array(N);
+    // unit type (index into ENEMY_TYPES for the horde), hit points left and a per-unit timer
+    this.type = new Uint8Array(N); this.hp = new Float32Array(N); this.aux = new Float32Array(N);
+    this.defColor = new THREE.Color(opts.unitColor || '#ffffff');
     this.scale = opts.scale || 1;
     this.bodyMat = new THREE.MeshStandardMaterial({ color: opts.color || '#3fd86b', roughness: 0.45, metalness: 0.05, emissive: opts.emissive || '#000000', emissiveIntensity: opts.emissive ? 0.6 : 0 });
     // soft rim light so units read clearly against the ground, plus a tiny bit of gloss
     this.uTime = { value: 0 };
+    // rim tint: 3D skins glow at the edges in the skin's colour, so dark characters still read as yours
+    this.uRim = { value: new THREE.Color(opts.model ? opts.color : '#000000') };
     this.bodyMat.onBeforeCompile = (sh) => {
       sh.uniforms.uTime = this.uTime;
+      sh.uniforms.uRim = this.uRim;
       sh.vertexShader = sh.vertexShader
         .replace('#include <common>', '#include <common>\nattribute float limb; uniform float uTime; varying float vLimb; varying float vH;')
         .replace('#include <begin_vertex>', `#include <begin_vertex>
@@ -113,38 +157,62 @@ export class Crowd {
           if (abs(limb) > 0.5 && abs(limb) < 1.5) { float side = sign(limb); transformed.z += sw * side * 0.13; transformed.y += max(0.0, cos(ph) * side) * 0.07; }
           if (abs(limb) > 1.5) { float side = sign(limb); transformed.z -= sw * side * 0.09; transformed.y += abs(sw) * 0.02; }`);
       sh.fragmentShader = sh.fragmentShader
-        .replace('#include <common>', '#include <common>\nvarying float vLimb; varying float vH;')
+        .replace('#include <common>', '#include <common>\nvarying float vLimb; varying float vH; uniform vec3 uRim;')
         .replace('#include <color_fragment>', `#include <color_fragment>
           // darker underside and feet, a lighter belly: reads as a rounded little character
           diffuseColor.rgb *= mix(0.62, 1.08, smoothstep(0.02, 0.62, vH));
           if (abs(vLimb) > 0.5 && abs(vLimb) < 1.5) diffuseColor.rgb *= 0.7;`)
         .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
         float rim = pow(1.0 - clamp(dot(normalize(vNormal), normalize(vViewPosition)), 0.0, 1.0), 2.5);
-        totalEmissiveRadiance += diffuseColor.rgb * rim * 0.55 + vec3(rim * 0.1);`);
+        totalEmissiveRadiance += diffuseColor.rgb * rim * 0.55 + vec3(rim * 0.1) + uRim * rim * 0.9;`);
     };
     this.bodyMat.customProgramCacheKey = () => 'hs-unit';
     this.bodyMat.roughness = 0.38;
-    this.body = new THREE.InstancedMesh(BODY, this.bodyMat, N);
+    this.body = new THREE.InstancedMesh(unitGeometry(opts.model), this.bodyMat, N);
+    this.bodyMat.vertexColors = !!opts.model;
+    if (opts.model) this.bodyMat.color.set('#ffffff');
+    // per-unit colour (multiplied with the material colour): lets each horde type wear its own colour
+    this.body.instanceColor = new THREE.InstancedBufferAttribute(new Float32Array(N * 3).fill(1), 3);
+    this.body.instanceColor.setUsage(THREE.DynamicDrawUsage);
+    this.gear = (opts.gear || []).map(({ type, kind }) => {
+      const mat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.45, metalness: kind === 'shield' ? 0.5 : 0.05 });
+      if (kind === 'flyer') {
+        // wings flap: vertices far from the body swing up and down
+        mat.onBeforeCompile = (sh) => {
+          sh.uniforms.uTime = this.uTime;
+          sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nuniform float uTime;').replace('#include <begin_vertex>', `#include <begin_vertex>
+            float far = max(0.0, abs(position.x) - 0.25);
+            transformed.y += far * sin(uTime * 26.0 + instanceMatrix[3].z * 3.0) * 1.3;`);
+        };
+        mat.customProgramCacheKey = () => 'hs-wing';
+      }
+      const m = new THREE.InstancedMesh(gearGeometry(kind), mat, N);
+      return { type, mesh: m, n: 0 };
+    });
     this.face = new THREE.InstancedMesh(FACE, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.3 }), N);
-    const accG = accessoryGeometry(opts.acc);
+    this.face.visible = !opts.model;
+    const accG = opts.model ? null : accessoryGeometry(opts.acc);
     this.acc = accG ? new THREE.InstancedMesh(accG, new THREE.MeshStandardMaterial({ color: opts.accColor || '#ffffff', roughness: 0.5, metalness: opts.acc === 'crown' ? 0.6 : 0.05 }), N) : null;
     if (!SHADOW_TEX) SHADOW_TEX = shadowTexture();
     const sg = new THREE.PlaneGeometry(0.8, 0.8); sg.rotateX(-Math.PI / 2);
     this.shadow = new THREE.InstancedMesh(sg, new THREE.MeshBasicMaterial({ map: SHADOW_TEX, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 }), N);
     this.shadow.renderOrder = 1;
-    [this.body, this.face, this.acc, this.shadow].forEach((m) => {
+    [this.body, this.face, this.acc, this.shadow, ...this.gear.map((q) => q.mesh)].forEach((m) => {
       if (!m) return;
       m.count = 0;
       m.frustumCulled = false;
       m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
       scene.add(m);
     });
-    this.body.castShadow = !!opts.shadows;
+    this.hasModel = !!opts.model;
+    this.shadowsOn = !!opts.shadows;
+    this.body.castShadow = this.shadowsOn && !this.hasModel;
     this.scene = scene;
     this.time = 0;
   }
 
-  setShadows(on) { this.body.castShadow = on; }
+  // 3D skins are far heavier than the blob, so they skip the shadow pass (each unit has a blob shadow anyway)
+  setShadows(on) { this.shadowsOn = on; this.body.castShadow = on && !this.hasModel; }
 
   add(x, z, opts = {}) {
     if (this.n >= MAX_UNITS) return -1;
@@ -154,6 +222,11 @@ export class Crowd {
     this.vy[i] = opts.vy || 0;
     this.ph[i] = Math.random() * 6.28;
     this.sp[i] = (opts.speed || 1) * (0.92 + Math.random() * 0.16);
+    this.type[i] = opts.type || 0;
+    this.hp[i] = opts.hp || 1;
+    this.aux[i] = opts.aux ?? Math.random() * 2;
+    const c = opts.color || this.defColor;
+    this.body.instanceColor.setXYZ(i, c.r, c.g, c.b);
     return i;
   }
 
@@ -163,6 +236,9 @@ export class Crowd {
     if (i !== j) {
       this.x[i] = this.x[j]; this.z[i] = this.z[j]; this.y[i] = this.y[j];
       this.vx[i] = this.vx[j]; this.vy[i] = this.vy[j]; this.ph[i] = this.ph[j]; this.sp[i] = this.sp[j];
+      this.type[i] = this.type[j]; this.hp[i] = this.hp[j]; this.aux[i] = this.aux[j];
+      const ic = this.body.instanceColor;
+      ic.setXYZ(i, ic.getX(j), ic.getY(j), ic.getZ(j));
     }
   }
 
@@ -177,6 +253,8 @@ export class Crowd {
     this.uTime.value = this.time * (this.dir < 0 ? 1 : 0.85);
     const arrs = [this.body.instanceMatrix.array, this.face.instanceMatrix.array, this.acc ? this.acc.instanceMatrix.array : null];
     const sh = this.shadow.instanceMatrix.array;
+    const gearOf = [];
+    this.gear.forEach((q) => { q.n = 0; gearOf[q.type] = q; });
     for (let i = 0; i < n; i++) {
       const ph = this.ph[i] + this.time * 11 * this.sp[i];
       const hop = Math.abs(Math.sin(ph));
@@ -193,18 +271,30 @@ export class Crowd {
         a[o + 8] = s * sx; a[o + 9] = 0; a[o + 10] = c * sx; a[o + 11] = 0;
         a[o + 12] = this.x[i]; a[o + 13] = y; a[o + 14] = this.z[i]; a[o + 15] = 1;
       }
+      const gq = gearOf[this.type[i]];
+      if (gq) gq.mesh.instanceMatrix.array.set(arrs[0].subarray(i * 16, i * 16 + 16), gq.n++ * 16);
       // the shadow stays on the ground and shrinks as the unit hops
       const o = i * 16; const ss = s0 * (1 - hop * 0.25) * (this.y[i] > 0.5 ? Math.max(0.3, 1 - this.y[i] * 0.1) : 1);
       sh[o] = ss; sh[o + 1] = 0; sh[o + 2] = 0; sh[o + 3] = 0; sh[o + 4] = 0; sh[o + 5] = 1; sh[o + 6] = 0; sh[o + 7] = 0;
       sh[o + 8] = 0; sh[o + 9] = 0; sh[o + 10] = ss; sh[o + 11] = 0; sh[o + 12] = this.x[i]; sh[o + 13] = 0.03; sh[o + 14] = this.z[i]; sh[o + 15] = 1;
     }
     [this.body, this.face, this.acc, this.shadow].forEach((m) => { if (m) { m.count = n; m.instanceMatrix.needsUpdate = true; } });
+    this.body.instanceColor.needsUpdate = true;
+    this.gear.forEach((q) => { q.mesh.count = q.n; q.mesh.instanceMatrix.needsUpdate = true; });
   }
 
-  setLook(color, acc, accColor) {
-    this.bodyMat.color.set(color);
+  setLook(color, acc, accColor, model = null) {
+    this.bodyMat.color.set(model ? '#ffffff' : color);
+    this.uRim.value.set(model ? color : '#000000');
+    this.hasModel = !!model;
+    this.body.castShadow = this.shadowsOn && !model;
+    if (this.body.geometry !== BODY) this.body.geometry.dispose();
+    this.body.geometry = unitGeometry(model);
+    this.bodyMat.vertexColors = !!model;
+    this.bodyMat.needsUpdate = true;
+    this.face.visible = !model;
     if (this.acc) { this.scene.remove(this.acc); this.acc.geometry.dispose(); this.acc.material.dispose(); this.acc = null; }
-    const g = accessoryGeometry(acc);
+    const g = model ? null : accessoryGeometry(acc);
     if (g) {
       this.acc = new THREE.InstancedMesh(g, new THREE.MeshStandardMaterial({ color: accColor || '#ffffff', roughness: 0.5, metalness: acc === 'crown' ? 0.6 : 0.05 }), MAX_UNITS);
       this.acc.count = 0; this.acc.frustumCulled = false;
@@ -213,6 +303,8 @@ export class Crowd {
   }
 
   dispose() {
+    if (this.body.geometry !== BODY) this.body.geometry.dispose();
     [this.body, this.face, this.acc, this.shadow].forEach((m) => { if (m) { this.scene.remove(m); m.material.dispose(); m.dispose(); } });
+    this.gear.forEach((q) => { this.scene.remove(q.mesh); q.mesh.geometry.dispose(); q.mesh.material.dispose(); q.mesh.dispose(); });
   }
 }

@@ -3,6 +3,7 @@
 // (meadow trees and flowers, snowy pines, desert cacti and mesas, candy lollipops, neon crystals),
 // plus ambient life (snowfall, fireflies, falling petals). Everything is instanced: a few draw calls.
 import * as THREE from 'three';
+import { bake } from './assets.js';
 import { LANE_W, CANNON_Z, mulberry32 } from './data.js';
 import { mergeSimple } from './crowd.js';
 
@@ -102,10 +103,17 @@ function mountainGeo(seed) {
 }
 
 // ───────────── prop kits per world ─────────────
+// Real models (CC0 Quaternius trees, cacti, rocks...) replace the hand-built ones when they have loaded;
+// `keep` lists the procedural props that stay alongside them.
+function withReal(proc, list, keep) {
+  const real = list.map(([name, h, o]) => { const geo = bake(name, h); return geo ? { name, geo, ...o } : null; }).filter(Boolean);
+  return real.length === list.length ? [...real, ...proc.filter((k) => keep.includes(k.name))] : proc;
+}
+
 function kit(theme) {
   const id = theme.id;
   if (id === 'meadow') {
-    return [
+    const proc = [
       { name: 'pine', weight: 3, scale: [0.8, 1.5], mat: { flatShading: true }, geo: parts([
         [T(new THREE.CylinderGeometry(0.14, 0.24, 1.6, 8), 0, 0.8, 0), '#6e4c30'],
         [tier(1.45, 1.5, 1.35), '#2b7f40'],
@@ -142,9 +150,18 @@ function kit(theme) {
         [S(T(new THREE.DodecahedronGeometry(0.35, 0), 0.6, 0.12, 0.2), 1, 0.8, 1), '#b4bac0'],
       ]) },
     ];
+    return withReal(proc, [
+      ['CommonTree_1', 5.2, { weight: 1.4, scale: [0.8, 1.3] }],
+      ['CommonTree_2', 5.6, { weight: 1.4, scale: [0.8, 1.3] }],
+      ['CommonTree_3', 4.4, { weight: 2, scale: [0.8, 1.3] }],
+      ['Bush_1', 1.2, { weight: 3, scale: [0.7, 1.4] }],
+      ['Flowers', 0.6, { weight: 5, scale: [0.8, 1.4], near: true }],
+      ['Rock_Moss_1', 0.7, { weight: 1.5, scale: [0.6, 1.8] }],
+      ['Rock_Moss_4', 1.0, { weight: 1, scale: [0.6, 1.6] }],
+    ], ['grass']);
   }
   if (id === 'snow') {
-    return [
+    const proc = [
       { name: 'pine', weight: 6, scale: [0.8, 1.6], geo: parts([
         [T(new THREE.CylinderGeometry(0.15, 0.22, 1.1, 6), 0, 0.55, 0), '#5e4632'],
         [T(new THREE.ConeGeometry(1.3, 1.9, 7), 0, 1.7, 0), '#2a5f4a'],
@@ -165,6 +182,13 @@ function kit(theme) {
         [S(T(new THREE.DodecahedronGeometry(0.61, 0), 0, 0.42, 0), 1.2, 0.25, 0.9), '#ffffff'],
       ]) },
     ];
+    return withReal(proc, [
+      ['PineTree_Snow_1', 5.4, { weight: 3, scale: [0.8, 1.4] }],
+      ['PineTree_Snow_3', 6, { weight: 1.5, scale: [0.8, 1.4] }],
+      ['CommonTree_Snow_4', 4.6, { weight: 2, scale: [0.8, 1.3] }],
+      ['Bush_Snow_1', 1.1, { weight: 2, scale: [0.7, 1.4] }],
+      ['Rock_Snow_2', 1.0, { weight: 2, scale: [0.6, 1.8] }],
+    ], ['mound', 'ice']);
   }
   if (id === 'desert') {
     const cactus = (h) => parts([
@@ -175,7 +199,7 @@ function kit(theme) {
       [R(T(new THREE.CapsuleGeometry(0.15, 0.35, 3, 8), -0.35, h * 0.4, 0), 0, 0, Math.PI / 2), '#4f9a43'],
       [T(new THREE.IcosahedronGeometry(0.12, 1), 0, h + 0.6, 0), '#ff6b9a'],
     ]);
-    return [
+    const proc = [
       { name: 'cactus', weight: 4, scale: [0.8, 1.4], geo: cactus(1.8) },
       { name: 'barrel', weight: 3, scale: [0.6, 1.1], near: true, geo: parts([
         [S(T(new THREE.IcosahedronGeometry(0.4, 1), 0, 0.32, 0), 1, 0.85, 1), '#5ea64f'],
@@ -194,6 +218,14 @@ function kit(theme) {
         [T(new THREE.IcosahedronGeometry(0.16, 1), 0.4, 0.12, 0), '#f2eadb'],
       ]) },
     ];
+    return withReal(proc, [
+      ['PalmTree_1', 5.5, { weight: 1.5, scale: [0.85, 1.25] }],
+      ['PalmTree_2', 5, { weight: 1, scale: [0.85, 1.25] }],
+      ['Cactus_1', 2.2, { weight: 2, scale: [0.7, 1.4] }],
+      ['Cactus_3', 2.6, { weight: 1.5, scale: [0.7, 1.4] }],
+      ['Cactus_4', 2.0, { weight: 1.5, scale: [0.7, 1.4] }],
+      ['CactusFlowers_2', 0.8, { weight: 3, scale: [0.7, 1.3], near: true }],
+    ], ['barrel', 'rock', 'bones']);
   }
   if (id === 'candy') {
     const pop = (c) => parts([
@@ -382,7 +414,7 @@ export function buildScenery(level, quality) {
   const hi = quality === 'high';
   const lo = quality === 'low';
   const anim = [];
-  const sunDir = new THREE.Vector3(0.45, 0.55, -0.7);
+  const sunDir = new THREE.Vector3(0.45, 0.55 * (theme.sunElev ?? 1), -0.7); // sinks toward dusk
 
   g.add(buildSky(theme, sunDir));
 
@@ -544,6 +576,19 @@ export function buildScenery(level, quality) {
   lampPole.count = li; bulbs.count = li;
   lampPole.castShadow = !lo;
   g.add(lampPole, bulbs);
+
+  // a camp outside the enemy fortress: barrels, crates, a cart and a campfire
+  const camp = [['Barrel', 1.1], ['Crate', 0.9], ['Barrel', 1.1], ['Cart', 1.7], ['Crate', 0.9], ['Bonfire_Lit', 0.8]].map(([n, h]) => bake(n, h));
+  if (camp.every(Boolean)) {
+    const cm = kitMaterial({ sway: 0 });
+    [-1, 1].forEach((s) => camp.forEach((geo, k) => {
+      const m = new THREE.Mesh(geo, cm);
+      m.position.set(s * (HALF + 2.6 + (k % 3) * 1.5 + rnd() * 0.6), 0, -L + 2.5 + Math.floor(k / 3) * 3 + rnd() * 1.5);
+      m.rotation.y = rnd() * 6.28;
+      m.castShadow = !lo; m.receiveShadow = true;
+      g.add(m);
+    }));
+  }
 
   // props scattered either side of the lane (none in front of the fortress)
   const items = kit(theme);
