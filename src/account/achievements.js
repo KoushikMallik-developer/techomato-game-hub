@@ -11,6 +11,8 @@ export const ACHIEVEMENTS = [
   { id: 'cb-win', name: 'Core secured', desc: 'Win a Core Breach match', icon: 'key', test: (s) => g(s, 'core-breach', 'wins') >= 1 },
   { id: 'cb-sharp', name: 'Sharpshooter', desc: '250 kills in Core Breach', icon: 'key', test: (s) => g(s, 'core-breach', 'kills') >= 250 },
   { id: 'cb-10', name: 'Veteran agent', desc: 'Reach level 10 in Core Breach', icon: 'key', test: (s) => g(s, 'core-breach', 'level') >= 10 },
+  { id: 'sh-5', name: 'Hopper', desc: 'Reach level 5 in Sky Hopper', icon: 'users', test: (s) => g(s, 'sky-hopper', 'level') >= 5 },
+  { id: 'sh-boss', name: 'Jelly slayer', desc: 'Defeat the Jelly King in Sky Hopper', icon: 'users', test: (s) => g(s, 'sky-hopper', 'bosses') >= 1 },
   { id: 'hs-10', name: 'Crowd pleaser', desc: 'Reach level 10 in Horde Surge', icon: 'users', test: (s) => g(s, 'horde-surge', 'level') >= 10 },
   { id: 'hs-25', name: 'Horde master', desc: 'Reach level 25 in Horde Surge', icon: 'users', test: (s) => g(s, 'horde-surge', 'level') >= 25 },
   { id: 'hs-endless', name: 'Unbreakable', desc: 'Reach wave 20 in Horde Surge endless mode', icon: 'users', test: (s) => g(s, 'horde-surge', 'endless') >= 20 },

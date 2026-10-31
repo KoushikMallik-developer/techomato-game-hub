@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node src/games/hordesurge/levels.check.mjs"
+    "test": "node src/games/hordesurge/levels.check.mjs && node src/games/skyhopper/levels.check.mjs"
   },
   "dependencies": {
     "firebase": "^11.10.0",

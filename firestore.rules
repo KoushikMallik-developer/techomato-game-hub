@@ -36,7 +36,7 @@ service cloud.firestore {
       match /saves/{game} {
         allow read, delete: if isOwner(uid);
         allow create, update: if isOwner(uid)
-          && game in ['ascendants', 'core-breach', 'horde-surge', 'midnight-pursuit']
+          && game in ['ascendants', 'core-breach', 'horde-surge', 'sky-hopper', 'midnight-pursuit']
           && request.resource.data.keys().hasOnly(['json', 'progress', 'updatedAt'])
           && request.resource.data.json is string && request.resource.data.json.size() < 200000
           && request.resource.data.progress is number;
@@ -103,6 +103,7 @@ service cloud.firestore {
         'ascendants_wins': 5000, 'ascendants_kills': 100000, 'ascendants_xp': 5000000,
         'core-breach_xp': 5000000, 'core-breach_wins': 5000, 'core-breach_kills': 100000,
         'horde-surge_level': 5000, 'horde-surge_stars': 15000, 'horde-surge_kills': 1000000000, 'horde-surge_endless': 10000,
+        'sky-hopper_level': 5000, 'sky-hopper_stars': 15000,
         'midnight-pursuit_races': 5000, 'midnight-pursuit_bounty': 1000000000, 'midnight-pursuit_speed': 450
       };
     }
