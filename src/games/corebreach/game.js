@@ -285,6 +285,7 @@ export class Game {
     this.renderer.setSize(w, h, false);
     this.composer.setPixelRatio(this.renderer.getPixelRatio());
     this.composer.setSize(w, h);
+    if (this.grade) { const b = this.renderer.getDrawingBufferSize(new THREE.Vector2()); this.grade.uniforms.texel.value.set(1 / b.x, 1 / b.y); } // ink outlines are one pixel wide
     this.camera.aspect = w / h;
     this.vmCam.aspect = w / h;
     this.vmCam.updateProjectionMatrix();

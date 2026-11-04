@@ -1,0 +1,12 @@
+Core Breach agent characters
+----------------------------
+KayKit : Adventurers Character Pack (1.0) by Kay Lousberg (https://www.kaylousberg.com),
+released under Creative Commons Zero, CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/).
+Credit is not required; it is given here with thanks.
+
+Downloaded from https://github.com/KayKit-Game-Assets/KayKit-Character-Pack-Adventures-1.0.
+Changes: held weapons and shields removed, the texture resized to 512 px, and the animation library
+(kept in Knight.glb only, the five characters share one rig) trimmed to the clips the game plays.
+
+Barbarian (Vex, and a recolour for Riot), Mage (Mirage, and Nova), Rogue_Hooded (Echo),
+Knight (Halo, and Solace), Rogue (Warden).
