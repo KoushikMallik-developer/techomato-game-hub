@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node seo.check.mjs",
     "preview": "vite preview",
     "test": "node src/games/hordesurge/levels.check.mjs && node src/games/skyhopper/levels.check.mjs && node src/games/tomatoku/logic.check.mjs"
   },

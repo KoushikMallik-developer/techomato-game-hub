@@ -3,6 +3,7 @@ import GameCanvas from '../components/GameCanvas.jsx';
 import { games, getGame } from '../games/registry.js';
 import { Link } from '../router.jsx';
 import { SITE_NAME } from '../config.js';
+import { gameTitle, gameDesc, HOME_TITLE } from '../seo.js';
 import { Cover } from './Home.jsx';
 import { Icon } from '../components/Brand.jsx';
 import { SyncBadge } from '../components/Account.jsx';
@@ -30,8 +31,10 @@ export default function GamePage({ id }) {
   const gated = !!(acc && acc.enabled && !(acc.ready && acc.user));
 
   useEffect(() => {
-    document.title = game ? `${game.title} – ${SITE_NAME}` : SITE_NAME;
-    return () => { document.title = `${SITE_NAME} – Play in your browser`; };
+    document.title = game ? gameTitle(game) : SITE_NAME;
+    const d = document.querySelector('meta[name=description]'); const old = d?.content;
+    if (d && game) d.content = gameDesc(game);
+    return () => { document.title = HOME_TITLE; if (d && old) d.content = old; };
   }, [game]);
 
   if (!game) {
