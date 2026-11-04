@@ -7,6 +7,7 @@ import * as B from './body.js';
 import * as SK from './skin.js';
 import * as HD from './head.js';
 import * as G from './guns.js';
+import { buildModelAgent, animateModelAgent } from './agentmodel.js';
 
 const box = (w, h, d) => new THREE.BoxGeometry(w, h, d);
 const cyl = (r1, r2, h, s = 10) => new THREE.CylinderGeometry(r1, r2, h, s);
@@ -83,6 +84,8 @@ const BODY_CACHE = new Map();
 let BODY_CLOTH = null;
 
 export function buildAgent(agentId, team, opts = {}) {
+  const modelled = buildModelAgent(agentId, team, opts); // downloaded character, when its file loaded
+  if (modelled) return modelled;
   const ag = AGENT[agentId] || AGENT.vex;
   const rimColor = new THREE.Color(opts.rim || '#000000');
   const rim = { color: rimColor };
@@ -366,6 +369,7 @@ const _t = new THREE.Vector3(); const _pole = new THREE.Vector3();
 // pose a rig each frame. s: { speed, mx, mz (move dir relative to facing: +mz forward, +mx right), crouch,
 // pitch, dt, aimRecoil, alive, ground, deathDir }
 export function animateAgent(rig, s) {
+  if (rig.model) { animateModelAgent(rig, s, HOLD); return; }
   const dt = s.dt;
   rig.speed = damp(rig.speed, s.speed, 10, dt);
   rig.crouch = damp(rig.crouch, s.crouch, 12, dt);

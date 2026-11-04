@@ -1,5 +1,6 @@
 // Core Breach entry point. GameHub calls mount(container) and keeps the returned cleanup function.
 import { Game } from './game.js';
+import { loadAgentModels } from './agentmodel.js';
 
 export const engine = 'three';
 
@@ -19,7 +20,10 @@ export function mount(container, opts = {}) {
   container.appendChild(loader);
   let game = null;
   let destroyed = false;
-  const timer = setTimeout(() => {
+  // the agent characters are downloaded first (at most 10 s; without them the game uses its built-in agents)
+  const models = Promise.race([loadAgentModels(opts.assetBase || undefined), new Promise((r) => setTimeout(r, 10000))]);
+  const timer = setTimeout(async () => {
+    await models;
     if (destroyed) return;
     try {
       game = new Game(container, opts);

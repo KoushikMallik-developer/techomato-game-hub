@@ -60,6 +60,19 @@ export const ACCOUNT_GAMES = {
     ],
     summary: (s) => ({ level: Math.max(1, n(s.level)), stars: sum(s.stars), bosses: n(s.stats?.bosses), stomps: n(s.stats?.stomps) }),
   },
+  tomatoku: {
+    title: 'Tomatoku',
+    key: 'tomatoku-save',
+    level: (s) => Math.floor(Math.sqrt(n(s.xp) / 150)) + 1,
+    progress: (s) => n(s.xp) + Math.max(1, n(s.level)) * 1000 + sum(s.stars) + n(s.solved) * 10,
+    points: (s) => Math.floor(n(s.xp) / 10) + Math.max(1, n(s.level)) * 40 + sum(s.stars) * 10,
+    boards: [
+      { id: 'solved', label: 'Puzzles solved', get: (s) => n(s.solved) },
+      { id: 'level', label: 'Furthest level', get: (s) => Math.max(1, n(s.level)) },
+      { id: 'stars', label: 'Stars earned', get: (s) => sum(s.stars) },
+    ],
+    summary: (s) => ({ level: Math.floor(Math.sqrt(n(s.xp) / 150)) + 1, solved: n(s.solved), garden: Math.max(1, n(s.level)), stars: sum(s.stars), perfect: n(s.stats?.perfect), streak: n(s.daily?.streak) }),
+  },
   'midnight-pursuit': {
     title: 'Midnight Pursuit',
     key: 'gamehub-midnight-pursuit-v1',

@@ -73,6 +73,28 @@ export const games = [
     load: () => import('./skyhopper/index.js'),
   },
   {
+    id: 'tomatoku',
+    badges: ['Puzzle', 'Phone ready'],
+    features: ['Meowdoku-style logic puzzle: one tomato per row, column and colour, none touching', 'Endless levels from 5×5 to 9×9, plus a Daily Puzzle everyone shares', 'Cross-out marks, auto cross-out, hints, undo and three lives', 'Stars, gardener levels, field themes and account sync'],
+    title: 'Tomatoku',
+    genre: 'Puzzle',
+    emoji: '🍅',
+    engine: 'canvas',
+    colors: ['#ff5a45', '#3f9b3a'],
+    tagline: 'Plant one tomato in every row, column and colour, with none touching. Every puzzle has exactly one solution.',
+    controls: [
+      ['Mouse / Touch', 'Tap a square: cross it out, tap again: plant a tomato, tap again: clear'],
+      ['Drag', 'Cross out many squares at once'],
+      ['Arrows', 'Move between squares · Enter taps'],
+      ['X / Backspace', 'Cross out / clear the square'],
+      ['H / Z', 'Hint / Undo'],
+      ['P / Esc', 'Pause and menu'],
+    ],
+    size: { width: 720, height: 960 },
+    portrait: true, // plays well on a phone held upright
+    load: () => import('./tomatoku/index.js'),
+  },
+  {
     id: 'core-breach',
     badges: ['3D', 'Online', 'Phone ready'],
     features: ['Eight agents with four abilities each', 'Three maps, buy rounds and the Core', 'Smart bots or online with friends', 'Ranks, missions and weapon skins'],

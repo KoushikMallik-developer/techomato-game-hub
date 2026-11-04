@@ -3,8 +3,9 @@ import Home from './pages/Home.jsx';
 import GamePage from './pages/GamePage.jsx';
 import { Link, usePath, navigate } from './router.jsx';
 import { SITE_NAME, TAGLINE } from './config.js';
+import { HOME_TITLE } from './seo.js';
 import { Logo, Icon } from './components/Brand.jsx';
-import { games } from './games/registry.js';
+import { games, getGame } from './games/registry.js';
 import Leaderboard from './pages/Leaderboard.jsx';
 import Profile from './pages/Profile.jsx';
 import Friends from './pages/Friends.jsx';
@@ -52,6 +53,14 @@ export default function App() {
   else if (path.startsWith('/friends')) page = <Friends />;
   else if (pr) page = <Profile key={pr[1] || 'me'} uid={pr[1]} />;
   else page = <NotFound />;
+  // keep the canonical link in step with in-app navigation; private and missing pages stay out of search results
+  const priv = page.type === NotFound || (m && !getGame(m[1])) || page.type === Profile || page.type === Friends;
+  useEffect(() => {
+    if (!m) document.title = priv ? SITE_NAME : path.startsWith('/leaderboard') ? `Leaderboard – Top Players | ${SITE_NAME}` : HOME_TITLE;
+    const c = document.querySelector('link[rel=canonical]'); if (c) c.href = new URL(path.replace(/\/+$/, '') || '/', c.href).href;
+    let r = document.querySelector('meta[name=robots]'); if (!r) { r = document.head.appendChild(document.createElement('meta')); r.name = 'robots'; }
+    r.content = priv ? 'noindex, nofollow' : 'index, follow, max-image-preview:large';
+  }, [path, priv]);
   return (
     <div className="t-app">
       <a className="t-skip" href="#main" onClick={(e) => { e.preventDefault(); const m = document.getElementById('main'); if (m) { m.focus(); m.scrollIntoView(); } }}>Skip to content</a>
